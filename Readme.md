@@ -70,7 +70,7 @@
 - ⭐ Какие типы данных есть?
 - На какие категории их можно разделить?
 
-[DataTypeAnswers](/DataTypes.md)
+[DataTypeAnswers](/Separate/DataTypes.md)
 
 ### Словари, множества и хэшируемые объекты
 
@@ -78,7 +78,7 @@
 - ⭐ Что может быть ключами словаря?
 - Что такое множество?
 
-[HashTable](/Hash.md)
+[HashTable](/Separate/Hash.md)
 
 ### Последовательности, итераторы и генераторы
 
@@ -88,7 +88,7 @@
 - Что такое подгенераторы (`yield from`)?
 - Что такое контейнерные и плоские последовательности?
 
-[Generators](/Generators.md)
+[Generators](/Separate/Generators.md)
 
 ### Функции
 
@@ -97,7 +97,7 @@
 - ⭐ Что такое замыкание?
 - Что такое чистая функция?
 
-[Functions](/Functions.md)
+[Functions](/Separate/Functions.md)
 
 ### Классы и ООП
 
@@ -113,16 +113,16 @@
 - Когда стоит использовать метаклассы?
 - ⭐ Чем содержимое `__dict__` отличается у класса и его экземпляра?
 
-[OPP](/OOP.md)
+[OPP](/Separate/OOP.md)
 
 ### Проектирование
 
 - ⭐ Что такое SOLID?
 - На какие категории можно разделить паттерны GoF?
 
-[SOLID](/SOLID.md)
+[SOLID](/Separate/SOLID.md)
 
-[GoF](/GoF.md)
+[GoF](/Separate/GoF.md)
 
 ### Декораторы
 
@@ -130,7 +130,7 @@
 - Что может быть декоратором и к чему он может быть применён?
 - Зачем нужен `functools.wraps`?
 
-[Decorators](/Decorators.md)
+[Decorators](/Separate/Decorators.md)
 
 ### Разное
 

@@ -1,12 +1,19 @@
-a = {"x": 1, "y": 2}
-b = {"y": 3, "z": 4}
+import time
+from functools import wraps
 
-merge = {}
-for key in (a.keys() | b.keys()):
-    merge[key] = a.get(key, 0) + b.get(key, 0)
+def counter(func):
+    wraps(func)
+    def wrapper(*args, **kwargs):
+        start = time.perf_counter()
+        res = func()
+        end = time.perf_counter()
+        print(end - start)
+        return res 
+    return wrapper
 
-print(merge)
 
-merge_v2 = {key: a.get(key, 0) + b.get(key, 0) for key in (a.keys() | b.keys())}
+@counter
+def slow():
+    return sum(range(10**6))
 
-print(merge_v2)
+slow()

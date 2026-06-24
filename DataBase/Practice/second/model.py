@@ -3,13 +3,12 @@ from decimal import Decimal
 
 from sqlalchemy import (
     DateTime,
-    ForeignKey,
     Integer,
     Numeric,
     String,
     func,
 )
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy.orm import Mapped, mapped_column
 
 from database import BaseModel
 
@@ -29,9 +28,9 @@ class Spimex_trading_results(BaseModel):
     delivery_type_id: Mapped[int] = mapped_column(Integer, default=0)
 
     volume: Mapped[int] = mapped_column(Integer, default=0)
-    total: Mapped[Decimal] = mapped_column(Numeric(10, 2))
+    total: Mapped[int] = mapped_column(Numeric(10, 2))
     count: Mapped[int] = mapped_column(Integer, default=0)
 
     date: Mapped[datetime] = mapped_column(DateTime)
     created_on: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
-    updated_on: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+    updated_on: Mapped[datetime] = mapped_column(DateTime, onupdate=func.now())

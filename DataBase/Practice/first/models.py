@@ -13,9 +13,11 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from database import BaseModel
 
+import re
+from sqlalchemy.orm import declared_attr
+
 
 class Genre(BaseModel):
-    __tablename__ = "genre"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     name: Mapped[str] = mapped_column(String, unique=True)
@@ -24,7 +26,6 @@ class Genre(BaseModel):
 
 
 class Author(BaseModel):
-    __tablename__ = "author"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     name: Mapped[str] = mapped_column(String, unique=False)
@@ -33,7 +34,6 @@ class Author(BaseModel):
 
 
 class Book(BaseModel):
-    __tablename__ = "book"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     title: Mapped[str] = mapped_column(String)
@@ -48,13 +48,10 @@ class Book(BaseModel):
 
     buy_book: Mapped[list["Buy_book"]] = relationship(back_populates="book")
 
-    created_on: Mapped[datetime] = mapped_column(
-        DateTime, server_default=func.now()
-    )
+    created_on: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
 
 
 class City(BaseModel):
-    __tablename__ = "city"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     name: Mapped[str] = mapped_column(String, unique=True)
@@ -65,7 +62,6 @@ class City(BaseModel):
 
 
 class Client(BaseModel):
-    __tablename__ = "client"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     name: Mapped[str] = mapped_column(String, unique=True)
@@ -78,7 +74,6 @@ class Client(BaseModel):
 
 
 class Buy(BaseModel):
-    __tablename__ = "buy"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     comment: Mapped[str] = mapped_column(String)
@@ -91,7 +86,6 @@ class Buy(BaseModel):
 
 
 class Buy_book(BaseModel):
-    __tablename__ = "buy_book"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     amount: Mapped[int] = mapped_column(Integer, default=0)
@@ -104,7 +98,6 @@ class Buy_book(BaseModel):
 
 
 class Step(BaseModel):
-    __tablename__ = "step"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     name: Mapped[str] = mapped_column(String)
@@ -113,7 +106,6 @@ class Step(BaseModel):
 
 
 class Buy_step(BaseModel):
-    __tablename__ = "buy_step"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     name: Mapped[str] = mapped_column(String)

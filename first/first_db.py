@@ -50,20 +50,32 @@ def seed() -> None:
 
         # --- Книги ---------------------------------------------------------
         b_hobbit = Book(
-            title="Хоббит", price=Decimal("12.50"), amount=10,
-            genre=fantasy, author=tolkien,
+            title="Хоббит",
+            price=Decimal("12.50"),
+            amount=10,
+            genre=fantasy,
+            author=tolkien,
         )
         b_lotr = Book(
-            title="Властелин колец", price=Decimal("25.00"), amount=5,
-            genre=fantasy, author=tolkien,
+            title="Властелин колец",
+            price=Decimal("25.00"),
+            amount=5,
+            genre=fantasy,
+            author=tolkien,
         )
         b_foundation = Book(
-            title="Основание", price=Decimal("15.30"), amount=8,
-            genre=sci_fi, author=asimov,
+            title="Основание",
+            price=Decimal("15.30"),
+            amount=8,
+            genre=sci_fi,
+            author=asimov,
         )
         b_orient = Book(
-            title="Убийство в Восточном экспрессе", price=Decimal("9.99"),
-            amount=12, genre=detective, author=christie,
+            title="Убийство в Восточном экспрессе",
+            price=Decimal("9.99"),
+            amount=12,
+            genre=detective,
+            author=christie,
         )
 
         # --- Города и клиенты ---------------------------------------------
@@ -87,11 +99,14 @@ def seed() -> None:
         now = datetime(2026, 1, 5, 10, 0)
         buy_alice.buy_step = [
             Buy_step(
-                name="Оформлен", step=s_new,
-                date_created=now, date_complited=now + timedelta(hours=1),
+                name="Оформлен",
+                step=s_new,
+                date_created=now,
+                date_complited=now + timedelta(hours=1),
             ),
             Buy_step(
-                name="Оплачен", step=s_paid,
+                name="Оплачен",
+                step=s_paid,
                 date_created=now + timedelta(hours=1),
                 date_complited=now + timedelta(hours=2),
             ),
@@ -102,11 +117,14 @@ def seed() -> None:
         buy_bob.buy_book = [Buy_book(book=b_orient, amount=1)]
         buy_bob.buy_step = [
             Buy_step(
-                name="Оформлен", step=s_new,
-                date_created=now, date_complited=now + timedelta(minutes=30),
+                name="Оформлен",
+                step=s_new,
+                date_created=now,
+                date_complited=now + timedelta(minutes=30),
             ),
             Buy_step(
-                name="Отправлен", step=s_shipped,
+                name="Отправлен",
+                step=s_shipped,
                 date_created=now + timedelta(hours=3),
                 date_complited=now + timedelta(hours=4),
             ),
@@ -137,9 +155,7 @@ def query_client_orders(client_name: str) -> None:
     """Запрос 2: заказы клиента + книги в них (relationship + M:N)."""
     print(f"[2] Заказы клиента «{client_name}»:")
     with SessionLocal() as session:
-        client = session.scalar(
-            select(Client).where(Client.name == client_name)
-        )
+        client = session.scalar(select(Client).where(Client.name == client_name))
         if client is None:
             print("    клиент не найден")
             print()

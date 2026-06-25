@@ -13,8 +13,6 @@ from db.database import BaseModel
 
 
 class Spimex_trading_results(BaseModel):
-    __tablename__ = "spimex_trading_results"
-
     __table_args__ = (
         UniqueConstraint("date", "exchange_product_id", name="uq_date_product"),
     )

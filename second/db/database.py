@@ -7,7 +7,7 @@ from db.config import (
 )
 
 from sqlalchemy import create_engine
-from sqlalchemy.orm import DeclarativeBase, sessionmaker
+from sqlalchemy.orm import DeclarativeBase, declared_attr, sessionmaker
 
 # SQLite-файл рядом со скриптом — ничего внешнего поднимать не нужно.
 # Для PostgreSQL заменить на:
@@ -21,4 +21,6 @@ SessionLocal = sessionmaker(bind=engine, expire_on_commit=False)
 
 
 class BaseModel(DeclarativeBase):
-    pass
+    @declared_attr.directive
+    def __tablename__(cls) -> str:
+        return cls.__name__.lower()

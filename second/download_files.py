@@ -80,7 +80,6 @@ async def collect_links(session: aiohttp.ClientSession, url):
         async with session.get(url) as response:
             # Ждем и читаем содержимое страницы
             html = await response.text()
-            print(f"Получил ответ от url: {url} вот контент: {html}")
 
             soup = BeautifulSoup(html, "html.parser")
 
@@ -140,6 +139,6 @@ SCRIPT_DIR = Path("/root/projects/learning/second")
 DOWNLOAD_DIR = SCRIPT_DIR / "download"
 DOWNLOAD_DIR.mkdir(exist_ok=True)
 
-asyncio.run(download_files_async(DOWNLOAD_DIR))
+# asyncio.run(download_files_async(DOWNLOAD_DIR))
 
-# download_files(DOWNLOAD_DIR)
+download_files(DOWNLOAD_DIR)

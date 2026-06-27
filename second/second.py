@@ -9,6 +9,14 @@ DOWNLOAD_DIR = SCRIPT_DIR / "download"
 DOWNLOAD_DIR.mkdir(exist_ok=True)
 
 
+def run_sync():
+    pass
+
+
+async def run_async():
+    pass
+
+
 if __name__ == "__main__":
     # Проверяем нужно ли заного качать файлы
     if not any(DOWNLOAD_DIR.iterdir()):

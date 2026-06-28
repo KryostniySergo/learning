@@ -9,7 +9,7 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import Mapped, mapped_column
 
-from db.database import BaseModel
+from db.database_sync import BaseModel
 
 
 class Spimex_trading_results(BaseModel):

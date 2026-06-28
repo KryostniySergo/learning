@@ -1,7 +1,7 @@
 import pandas as pd
 from sqlalchemy.dialects.postgresql import insert
 
-from db.database import BaseModel, SessionLocal, engine
+from db.database_sync import BaseModel, SessionLocal, engine
 from db.model import Spimex_trading_results
 
 
@@ -12,7 +12,7 @@ def reset_schema() -> None:
     print("Схема создана: таблица ->", ", ".join(BaseModel.metadata.tables))
 
 
-def insert_data_to_db(df: pd.DataFrame):
+def insert_data_to_db_sync(df: pd.DataFrame):
     reset_schema()
 
     records = [

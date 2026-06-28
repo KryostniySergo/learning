@@ -28,7 +28,7 @@ def save_file(DOWNLOAD_DIR: Path, link):
     print(f"Сохранено: {file_path}")
 
 
-def download_files(DOWNLOAD_DIR: Path):
+def download_files_sync(DOWNLOAD_DIR: Path):
     for i in range(MAX_PAGE, 1, -1):
         response = requests.get(
             url=f"{MAIN_URL}/markets/oil_products/trades/results/?page=page-{i}"
@@ -135,10 +135,10 @@ async def download_files_async(DOWNLOAD_DIR: Path):
         print("Скачал файлы")
 
 
-SCRIPT_DIR = Path("/root/projects/learning/second")
-DOWNLOAD_DIR = SCRIPT_DIR / "download"
-DOWNLOAD_DIR.mkdir(exist_ok=True)
+# SCRIPT_DIR = Path("/root/projects/learning/second")
+# DOWNLOAD_DIR = SCRIPT_DIR / "download"
+# DOWNLOAD_DIR.mkdir(exist_ok=True)
 
-# asyncio.run(download_files_async(DOWNLOAD_DIR))
+# # asyncio.run(download_files_async(DOWNLOAD_DIR))
 
-download_files(DOWNLOAD_DIR)
+# download_files(DOWNLOAD_DIR)

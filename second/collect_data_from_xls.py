@@ -1,3 +1,5 @@
+import asyncio
+from concurrent.futures import ProcessPoolExecutor
 from datetime import datetime
 from pathlib import Path
 
@@ -71,7 +73,7 @@ def evaluate_additional_columns(df: pd.DataFrame, trade_date: datetime) -> None:
     df[Field.TRADE_DATE] = trade_date
 
 
-def collect_data_from_xls(DOWNLOAD_DIR: Path) -> pd.DataFrame:
+def collect_data_from_xls_sync(DOWNLOAD_DIR: Path) -> pd.DataFrame:
     result_data_dfs: list[pd.DataFrame] = []
     xls_amount = len(list(DOWNLOAD_DIR.iterdir()))
     for i, file in enumerate(DOWNLOAD_DIR.iterdir()):
@@ -83,3 +85,20 @@ def collect_data_from_xls(DOWNLOAD_DIR: Path) -> pd.DataFrame:
         print(f"Обработал {i} xls файлов из {xls_amount}")
     result_df = pd.concat(result_data_dfs, axis=0, ignore_index=True)
     return result_df
+
+
+def process_file(file: Path) -> pd.DataFrame:
+    df = read_xls(str(file))
+    trade_date = extract_date(df)
+    filtered_df = filter_df(df)
+    evaluate_additional_columns(filtered_df, trade_date)
+    return filtered_df
+
+
+async def collect_data_from_xls_async(DOWNLOAD_DIR: Path) -> pd.DataFrame:
+    files = [f for f in DOWNLOAD_DIR.iterdir() if f.is_file()]
+    loop = asyncio.get_running_loop()
+    with ProcessPoolExecutor() as executor:
+        tasks = [loop.run_in_executor(executor, process_file, f) for f in files]
+        result_data_dfs = await asyncio.gather(*tasks)
+    return pd.concat(result_data_dfs, axis=0, ignore_index=True)

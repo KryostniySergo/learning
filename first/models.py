@@ -1,6 +1,7 @@
 from datetime import datetime
 from decimal import Decimal
 
+from database import BaseModel
 from sqlalchemy import (
     DateTime,
     ForeignKey,
@@ -11,14 +12,8 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from database import BaseModel
-
-import re
-from sqlalchemy.orm import declared_attr
-
 
 class Genre(BaseModel):
-
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     name: Mapped[str] = mapped_column(String, unique=True)
 
@@ -26,7 +21,6 @@ class Genre(BaseModel):
 
 
 class Author(BaseModel):
-
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     name: Mapped[str] = mapped_column(String, unique=False)
 
@@ -34,7 +28,6 @@ class Author(BaseModel):
 
 
 class Book(BaseModel):
-
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     title: Mapped[str] = mapped_column(String)
     price: Mapped[Decimal] = mapped_column(Numeric(10, 2))
@@ -52,7 +45,6 @@ class Book(BaseModel):
 
 
 class City(BaseModel):
-
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     name: Mapped[str] = mapped_column(String, unique=True)
 
@@ -62,7 +54,6 @@ class City(BaseModel):
 
 
 class Client(BaseModel):
-
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     name: Mapped[str] = mapped_column(String, unique=True)
     email: Mapped[str] = mapped_column(String, unique=True)
@@ -74,7 +65,6 @@ class Client(BaseModel):
 
 
 class Buy(BaseModel):
-
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     comment: Mapped[str] = mapped_column(String)
 
@@ -86,7 +76,6 @@ class Buy(BaseModel):
 
 
 class Buy_book(BaseModel):
-
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     amount: Mapped[int] = mapped_column(Integer, default=0)
 
@@ -98,7 +87,6 @@ class Buy_book(BaseModel):
 
 
 class Step(BaseModel):
-
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     name: Mapped[str] = mapped_column(String)
 
@@ -106,11 +94,10 @@ class Step(BaseModel):
 
 
 class Buy_step(BaseModel):
-
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     name: Mapped[str] = mapped_column(String)
     date_created: Mapped[datetime] = mapped_column(DateTime)
-    date_complited: Mapped[datetime] = mapped_column(DateTime)
+    date_completed: Mapped[datetime] = mapped_column(DateTime)
 
     buy_id: Mapped[int] = mapped_column(Integer, ForeignKey("buy.id"))
     buy: Mapped["Buy"] = relationship(back_populates="buy_step")

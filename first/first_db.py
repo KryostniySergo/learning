@@ -14,8 +14,6 @@
 from datetime import datetime, timedelta
 from decimal import Decimal
 
-from sqlalchemy import select
-
 from database import BaseModel, SessionLocal, engine
 from models import (
     Author,
@@ -28,6 +26,7 @@ from models import (
     Genre,
     Step,
 )
+from sqlalchemy import select
 
 
 def reset_schema() -> None:
@@ -38,14 +37,15 @@ def reset_schema() -> None:
 
 
 def seed() -> None:
+    """seed Наполняем таблицу"""
     with SessionLocal() as session:
         # --- Справочники ---------------------------------------------------
         fantasy = Genre(name="Фэнтези")
         sci_fi = Genre(name="Научная фантастика")
         detective = Genre(name="Детектив")
 
-        tolkien = Author(name="Дж. Р. Р. Толкин")
-        asimov = Author(name="Айзек Азимов")
+        tolkien = Author(name="Дж. Р. Р. Тон")
+        asimov = Author(name="Айбек Азимов")
         christie = Author(name="Агата Кристи")
 
         # --- Книги ---------------------------------------------------------
@@ -53,13 +53,6 @@ def seed() -> None:
             title="Хоббит",
             price=Decimal("12.50"),
             amount=10,
-            genre=fantasy,
-            author=tolkien,
-        )
-        b_lotr = Book(
-            title="Властелин колец",
-            price=Decimal("25.00"),
-            amount=5,
             genre=fantasy,
             author=tolkien,
         )
@@ -102,13 +95,13 @@ def seed() -> None:
                 name="Оформлен",
                 step=s_new,
                 date_created=now,
-                date_complited=now + timedelta(hours=1),
+                date_completed=now + timedelta(hours=1),
             ),
             Buy_step(
                 name="Оплачен",
                 step=s_paid,
                 date_created=now + timedelta(hours=1),
-                date_complited=now + timedelta(hours=2),
+                date_completed=now + timedelta(hours=2),
             ),
         ]
 
@@ -120,13 +113,13 @@ def seed() -> None:
                 name="Оформлен",
                 step=s_new,
                 date_created=now,
-                date_complited=now + timedelta(minutes=30),
+                date_completed=now + timedelta(minutes=30),
             ),
             Buy_step(
                 name="Отправлен",
                 step=s_shipped,
                 date_created=now + timedelta(hours=3),
-                date_complited=now + timedelta(hours=4),
+                date_completed=now + timedelta(hours=4),
             ),
         ]
 
@@ -175,18 +168,14 @@ def query_order_steps(buy_id: int) -> None:
             select(
                 Step.name,
                 Buy_step.date_created,
-                Buy_step.date_complited,
+                Buy_step.date_completed,
             )
             .join(Buy_step.step)
             .where(Buy_step.buy_id == buy_id)
             .order_by(Buy_step.date_created)
         )
         for step_name, created, completed in session.execute(stmt):
-            print(
-                f"    {step_name}: "
-                f"начат {created:%Y-%m-%d %H:%M}, "
-                f"завершён {completed:%Y-%m-%d %H:%M}"
-            )
+            print(f"    {step_name}: начат {created:%Y-%m-%d %H:%M}, завершён {completed:%Y-%m-%d %H:%M}")
     print()
 
 

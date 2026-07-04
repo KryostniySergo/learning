@@ -1,17 +1,15 @@
 import asyncio
+import itertools
 from pathlib import Path
 from uuid import uuid4
 
-import itertools
-import aiohttp
 import aiofiles
-from bs4 import BeautifulSoup
+import aiohttp
 import requests
+from bs4 import BeautifulSoup
 
 MAIN_URL = "https://spimex.com"
-MAX_PAGE = (
-    100  # Используем 100 так как только с этой страницы начинаются данные с 2023 года
-)
+MAX_PAGE = 100  # Используем 100 так как только с этой страницы начинаются данные с 2023 года
 
 
 def save_file(DOWNLOAD_DIR: Path, link):
@@ -30,13 +28,9 @@ def save_file(DOWNLOAD_DIR: Path, link):
 
 def download_files_sync(DOWNLOAD_DIR: Path):
     for i in range(MAX_PAGE, 1, -1):
-        response = requests.get(
-            url=f"{MAIN_URL}/markets/oil_products/trades/results/?page=page-{i}"
-        )
+        response = requests.get(url=f"{MAIN_URL}/markets/oil_products/trades/results/?page=page-{i}")
         if response.status_code != 200:
-            raise Exception(
-                f"Не удалось получить данные со страницы {i}. Возможно проблемы с интернетом"
-            )
+            raise Exception(f"Не удалось получить данные со страницы {i}. Возможно проблемы с интернетом")
 
         soup = BeautifulSoup(response.text, "html.parser")
 
@@ -60,9 +54,7 @@ def download_files_sync(DOWNLOAD_DIR: Path):
         print(f"Обработал страницу: {i}.")
 
 
-async def save_file_async(
-    session: aiohttp.ClientSession, DOWNLOAD_DIR: Path, link: str
-):
+async def save_file_async(session: aiohttp.ClientSession, DOWNLOAD_DIR: Path, link: str):
     file_path = DOWNLOAD_DIR / f"{uuid4()}.xls"
 
     url = f"{MAIN_URL}{link}"
@@ -111,11 +103,8 @@ async def collect_links(session: aiohttp.ClientSession, url):
 
 
 async def download_files_async(DOWNLOAD_DIR: Path):
-    urls = [
-        f"{MAIN_URL}/markets/oil_products/trades/results/?page=page-{i}"
-        for i in range(MAX_PAGE, 1, -1)
-    ]
-    print(f"Создал набор ulrs")
+    urls = [f"{MAIN_URL}/markets/oil_products/trades/results/?page=page-{i}" for i in range(MAX_PAGE, 1, -1)]
+    print("Создал набор ulrs")
 
     async with aiohttp.ClientSession() as session:
         tasks = [collect_links(session, url) for url in urls]
@@ -126,9 +115,7 @@ async def download_files_async(DOWNLOAD_DIR: Path):
 
         filtered_links = list(itertools.chain.from_iterable(raw_links))
 
-        download_tasks = [
-            save_file_async(session, DOWNLOAD_DIR, link) for link in filtered_links
-        ]
+        download_tasks = [save_file_async(session, DOWNLOAD_DIR, link) for link in filtered_links]
 
         await asyncio.gather(*download_tasks)
 

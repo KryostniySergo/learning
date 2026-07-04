@@ -38,11 +38,7 @@ def read_xls(path: str) -> pd.DataFrame:
 def extract_date(df: pd.DataFrame) -> datetime:
     marker = df[Field.EXCHANGE_PRODUCT_ID].astype(str)
     trade_date = marker.str.extract(r"Дата торгов:\s*(\d{2}\.\d{2}\.\d{4})")[0].dropna()
-    trade_date = (
-        pd.to_datetime(trade_date.iloc[0], format="%d.%m.%Y").date()
-        if len(trade_date)
-        else None
-    )
+    trade_date = pd.to_datetime(trade_date.iloc[0], format="%d.%m.%Y").date() if len(trade_date) else None
     if not trade_date:
         raise Exception("Не удалось получить дату из документа")
 
@@ -57,13 +53,9 @@ def filter_df(df: pd.DataFrame, unit="Метрическая тонна"):
     df = df[is_data & unit_col.eq(unit)].reset_index(drop=True)
 
     for c in [Field.VOLUME, Field.TOTAL, Field.COUNT]:
-        df[c] = pd.to_numeric(df[c].replace("-", pd.NA), errors="coerce").astype(
-            "Int64"
-        )
+        df[c] = pd.to_numeric(df[c].replace("-", pd.NA), errors="coerce").astype("Int64")
 
-    df = df[df["count"] > 0]
-
-    return df
+    return df[df["count"] > 0]
 
 
 def evaluate_additional_columns(df: pd.DataFrame, trade_date: datetime) -> None:
@@ -83,8 +75,7 @@ def collect_data_from_xls_sync(DOWNLOAD_DIR: Path) -> pd.DataFrame:
         evaluate_additional_columns(filtered_df, trade_date)
         result_data_dfs.append(filtered_df)
         print(f"Обработал {i} xls файлов из {xls_amount}")
-    result_df = pd.concat(result_data_dfs, axis=0, ignore_index=True)
-    return result_df
+    return pd.concat(result_data_dfs, axis=0, ignore_index=True)
 
 
 def process_file(file: Path) -> pd.DataFrame:

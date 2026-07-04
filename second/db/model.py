@@ -1,21 +1,19 @@
 from datetime import datetime
 
+from db.database_sync import BaseModel
 from sqlalchemy import (
     DateTime,
     Integer,
+    Numeric,
     String,
     UniqueConstraint,
     func,
 )
 from sqlalchemy.orm import Mapped, mapped_column
 
-from db.database_sync import BaseModel
-
 
 class Spimex_trading_results(BaseModel):
-    __table_args__ = (
-        UniqueConstraint("date", "exchange_product_id", name="uq_date_product"),
-    )
+    __table_args__ = (UniqueConstraint("date", "exchange_product_id", name="uq_date_product"),)
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
 
@@ -27,11 +25,9 @@ class Spimex_trading_results(BaseModel):
     delivery_type_id: Mapped[str] = mapped_column(String)
 
     volume: Mapped[int] = mapped_column(Integer, default=0)
-    total: Mapped[int] = mapped_column(Integer, default=0)
+    total: Mapped[int] = mapped_column(Numeric, default=0)
     count: Mapped[int] = mapped_column(Integer, default=0)
 
     date: Mapped[datetime] = mapped_column(DateTime)
     created_on: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
-    updated_on: Mapped[datetime] = mapped_column(
-        DateTime, onupdate=func.now(), nullable=True
-    )
+    updated_on: Mapped[datetime] = mapped_column(DateTime, onupdate=func.now(), nullable=True)

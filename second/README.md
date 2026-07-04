@@ -1,6 +1,6 @@
 Чтобы запустить второй тест вам нужно:
 
-1. создать .env в папке first
+1. создать .env в папке second
 ```
 DB_NAME = second
 DB_HOST = localhost

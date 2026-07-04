@@ -33,10 +33,10 @@ class Book(BaseModel):
     price: Mapped[Decimal] = mapped_column(Numeric(10, 2))
     amount: Mapped[int] = mapped_column(Integer, default=0)
 
-    genre_id: Mapped[int] = mapped_column(Integer, ForeignKey("genre.id"))
+    genre_id: Mapped[int] = mapped_column(Integer, ForeignKey("genre.id"), index=True)
     genre: Mapped["Genre"] = relationship(back_populates="books")
 
-    author_id: Mapped[int] = mapped_column(Integer, ForeignKey("author.id"))
+    author_id: Mapped[int] = mapped_column(Integer, ForeignKey("author.id"), index=True)
     author: Mapped["Author"] = relationship(back_populates="books")
 
     buy_book: Mapped[list["Buy_book"]] = relationship(back_populates="book")
@@ -48,14 +48,14 @@ class City(BaseModel):
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     name: Mapped[str] = mapped_column(String, unique=True)
 
-    delivery_time: Mapped[datetime] = mapped_column(DateTime)
+    delivery_time: Mapped[int] = mapped_column(Integer)
 
     clients: Mapped[list["Client"]] = relationship(back_populates="city")
 
 
 class Client(BaseModel):
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    name: Mapped[str] = mapped_column(String, unique=True)
+    name: Mapped[str] = mapped_column(String)
     email: Mapped[str] = mapped_column(String, unique=True)
 
     city_id: Mapped[int] = mapped_column(Integer, ForeignKey("city.id"))
@@ -95,7 +95,7 @@ class Step(BaseModel):
 
 class Buy_step(BaseModel):
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    name: Mapped[str] = mapped_column(String)
+
     date_created: Mapped[datetime] = mapped_column(DateTime)
     date_completed: Mapped[datetime] = mapped_column(DateTime)
 

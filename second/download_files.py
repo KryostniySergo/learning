@@ -1,13 +1,11 @@
 from pathlib import Path
 from uuid import uuid4
 
-from bs4 import BeautifulSoup
 import requests
+from bs4 import BeautifulSoup
 
 MAIN_URL = "https://spimex.com"
-MAX_PAGE = (
-    100  # Используем 100 так как только с этой страницы начинаются данные с 2023 года
-)
+MAX_PAGE = 100  # Используем 100 так как только с этой страницы начинаются данные с 2023 года
 
 
 def download_file_to_dir(DOWNLOAD_DIR: Path, link):
@@ -25,14 +23,10 @@ def download_file_to_dir(DOWNLOAD_DIR: Path, link):
 
 
 def download_files(DOWNLOAD_DIR: Path):
-    for i in range(MAX_PAGE, 1, -1):
-        response = requests.get(
-            url=f"{MAIN_URL}/markets/oil_products/trades/results/?page=page-{i}"
-        )
+    for i in range(MAX_PAGE, 0, -1):
+        response = requests.get(url=f"{MAIN_URL}/markets/oil_products/trades/results/?page=page-{i}")
         if response.status_code != 200:
-            raise Exception(
-                f"Не удалось получить данные со страницы {i}. Возможно проблемы с интернетом"
-            )
+            raise Exception(f"Не удалось получить данные со страницы {i}. Возможно проблемы с интернетом")
 
         soup = BeautifulSoup(response.text, "html.parser")
 

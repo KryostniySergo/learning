@@ -12,7 +12,9 @@ from sqlalchemy import (
 from sqlalchemy.orm import Mapped, mapped_column
 
 
-class Spimex_trading_results(BaseModel):
+class SpimexTradingResults(BaseModel):
+    __tablename__ = "spimex_trading_results"
+
     __table_args__ = (UniqueConstraint("date", "exchange_product_id", name="uq_date_product"),)
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)

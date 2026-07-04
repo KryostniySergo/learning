@@ -6,7 +6,7 @@ from db.config import (
     DB_USER,
 )
 from sqlalchemy import create_engine
-from sqlalchemy.orm import DeclarativeBase, declared_attr, sessionmaker
+from sqlalchemy.orm import DeclarativeBase, sessionmaker
 
 DATABASE_URL = f"postgresql+psycopg2://{DB_USER}:{DB_PASS}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
 
@@ -15,6 +15,4 @@ SessionLocal = sessionmaker(bind=engine, expire_on_commit=False)
 
 
 class BaseModel(DeclarativeBase):
-    @declared_attr.directive
-    def __tablename__(cls) -> str:
-        return cls.__name__.lower()
+    pass

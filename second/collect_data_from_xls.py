@@ -79,11 +79,15 @@ def collect_data_from_xls_sync(DOWNLOAD_DIR: Path) -> pd.DataFrame:
 
 
 def process_file(file: Path) -> pd.DataFrame:
-    df = read_xls(str(file))
-    trade_date = extract_date(df)
-    filtered_df = filter_df(df)
-    evaluate_additional_columns(filtered_df, trade_date)
-    return filtered_df
+    try:
+        df = read_xls(str(file))
+        trade_date = extract_date(df)
+        filtered_df = filter_df(df)
+        evaluate_additional_columns(filtered_df, trade_date)
+        return filtered_df
+    except Exception as e:
+        print(f"Путь: {str(file)} | Возникла ошибка: {e}")
+        return pd.DataFrame()
 
 
 async def collect_data_from_xls_async(DOWNLOAD_DIR: Path) -> pd.DataFrame:

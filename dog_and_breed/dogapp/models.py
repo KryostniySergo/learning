@@ -5,10 +5,10 @@ from django.db import models
 # Create your models here.
 class Breed(models.Model):
     class Sizes(models.TextChoices):
-        Tiny = "Tiny", "Tiny"
-        Small = "Small", "Small"
-        Medium = "Medium", "Medium"
-        Large = "Large", "Large"
+        TINY = "Tiny", "Tiny"
+        SMALL = "Small", "Small"
+        MEDIUM = "Medium", "Medium"
+        LARGE = "Large", "Large"
 
     name: str = models.CharField()
     size: str = models.CharField(choices=Sizes.choices)
@@ -16,6 +16,14 @@ class Breed(models.Model):
     trainability: int = models.IntegerField(validators=[MinValueValidator(1), MaxValueValidator(5)])
     shedding_amount: int = models.IntegerField(validators=[MinValueValidator(1), MaxValueValidator(5)])
     exercise_needs: int = models.IntegerField(validators=[MinValueValidator(1), MaxValueValidator(5)])
+
+    def __str__(self) -> str:
+        """__str__ Возвращает имя Породы
+
+        Returns:
+            str: Имя породы
+        """
+        return self.name
 
 
 class Dog(models.Model):
@@ -26,3 +34,11 @@ class Dog(models.Model):
     color: str = models.CharField()
     favorite_food: str = models.CharField()
     favorite_toy: str = models.CharField()
+
+    def __str__(self) -> str:
+        """__str__ Возвращает имя Собаки
+
+        Returns:
+            str: Имя собаки
+        """
+        return self.name

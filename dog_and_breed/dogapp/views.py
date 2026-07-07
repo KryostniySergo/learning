@@ -33,3 +33,6 @@ class DogViewSet(viewsets.ModelViewSet):
 class BreedViewSet(viewsets.ModelViewSet):
     serializer_class = BreedSerializer
     queryset = Breed.objects.all()
+
+    def get_queryset(self) -> BaseManager[Breed]:
+        return Breed.objects.annotate(dogs_count=Count("dogs")).order_by("id")

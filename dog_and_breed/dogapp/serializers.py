@@ -8,6 +8,9 @@ class DogSerializer(serializers.ModelSerializer):
         model = Dog
         fields = "__all__"
 
+    avg_breed_age = serializers.IntegerField(read_only=True)
+    same_breed_count = serializers.IntegerField(read_only=True)
+
 
 class BreedSerializer(serializers.ModelSerializer):
     class Meta:

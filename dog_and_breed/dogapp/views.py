@@ -25,7 +25,7 @@ class DogViewSet(viewsets.ModelViewSet):
                     avg_breed_age=Subquery(avg_age_subquery, output_field=IntegerField())
                 )
             case "retrieve":
-                return Dog.objects.select_related("breed").annotate(same_breed_count=Count("breed__dogs"))
+                return Dog.objects.annotate(same_breed_count=Count("breed__dogs"))
             case _:
                 return Dog.objects.all()
 

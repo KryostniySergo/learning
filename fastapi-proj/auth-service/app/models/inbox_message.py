@@ -1,5 +1,6 @@
 from datetime import datetime
 from enum import Enum
+from uuid import UUID as PyUUID
 from uuid import uuid4
 
 from sqlalchemy import TIMESTAMP, UUID, String
@@ -16,8 +17,8 @@ class InMessageStatus(str, Enum):
 
 
 class InboxMessage(Base):
-    id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid4)
-    event_id: Mapped[UUID] = mapped_column(UUID, unique=True, index=True)
+    id: Mapped[PyUUID] = mapped_column(primary_key=True, default=uuid4)
+    event_id: Mapped[PyUUID] = mapped_column(UUID, unique=True, index=True)
     event_type: Mapped[str] = mapped_column(String(100))
     consumer_name: Mapped[str] = mapped_column(String(100))  # какой обработчик/сервис это принял
 

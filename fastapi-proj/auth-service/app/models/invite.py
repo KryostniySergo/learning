@@ -1,8 +1,9 @@
 from datetime import datetime, timedelta
 from enum import Enum
+from uuid import UUID as PyUUID
 from uuid import uuid4
 
-from sqlalchemy import TIMESTAMP, UUID, ForeignKey, String
+from sqlalchemy import TIMESTAMP, ForeignKey, String
 from sqlalchemy import Enum as SqlEnum
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -26,10 +27,10 @@ def default_expiry() -> datetime:
 
 
 class Invite(Base, TimestampMixin):
-    id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid4)
+    id: Mapped[PyUUID] = mapped_column(primary_key=True, default=uuid4)
     token: Mapped[str] = mapped_column(String(255), unique=True, index=True)
     status: Mapped[InviteStatus] = mapped_column(SqlEnum(InviteStatus), default=InviteStatus.CREATED)
     expires_at: Mapped[datetime] = mapped_column(TIMESTAMP, default=default_expiry)
 
-    user_id: Mapped[UUID | None] = mapped_column(ForeignKey("user.id"), nullable=True)
-    account_id: Mapped[UUID] = mapped_column(ForeignKey("account.id"), nullable=False)
+    user_id: Mapped[PyUUID | None] = mapped_column(ForeignKey("user.id"), nullable=True)
+    account_id: Mapped[PyUUID] = mapped_column(ForeignKey("account.id"), nullable=False)

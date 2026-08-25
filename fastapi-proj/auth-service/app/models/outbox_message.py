@@ -1,5 +1,6 @@
 from datetime import datetime
 from enum import Enum
+from uuid import UUID as PyUUID
 from uuid import uuid4
 
 from sqlalchemy import INT, TIMESTAMP, UUID, String
@@ -17,10 +18,10 @@ class OutMessageStatus(str, Enum):
 
 
 class OutboxMessage(Base):
-    id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid4)
-    event_id: Mapped[UUID] = mapped_column(UUID)
+    id: Mapped[PyUUID] = mapped_column(primary_key=True, default=uuid4)
+    event_id: Mapped[PyUUID] = mapped_column(UUID)
     event_type: Mapped[str] = mapped_column(String(100))
-    aggregate_id: Mapped[UUID] = mapped_column(UUID)
+    aggregate_id: Mapped[PyUUID] = mapped_column(UUID)
 
     occurred_at: Mapped[datetime] = mapped_column(TIMESTAMP, default=datetime.now)
 

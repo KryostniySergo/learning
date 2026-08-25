@@ -13,7 +13,7 @@ from app.models.base import Base, TimestampMixin
 class InviteStatus(str, Enum):
     CREATED = "created"
     IN_PROGRESS = "in_progress"
-    COMPETED = "completed"
+    COMPLETED = "completed"
     FAILED = "failed"
 
 

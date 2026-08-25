@@ -1,10 +1,11 @@
 from enum import Enum
 from uuid import uuid4
 
-from app.models.base import Base, TimestampMixin
 from sqlalchemy import UUID, ForeignKey
 from sqlalchemy import Enum as SqlEnum
 from sqlalchemy.orm import Mapped, mapped_column
+
+from app.models.base import Base, TimestampMixin
 
 
 class Role(str, Enum):

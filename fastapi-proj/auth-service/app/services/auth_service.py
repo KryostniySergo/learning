@@ -1,5 +1,6 @@
 import logging
 import secrets as secrets_lib
+from uuid import uuid4
 
 from sqlalchemy.exc import IntegrityError
 
@@ -43,7 +44,7 @@ class AuthService:
             logger.info("check_account: %s already taken", email)
             return False
 
-        account = Account(email=email)
+        account = Account(id=uuid4(), email=email)
         self.uow.accounts.add(account)
 
         invite = Invite(

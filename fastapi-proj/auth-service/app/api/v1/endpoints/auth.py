@@ -1,4 +1,5 @@
 from fastapi import APIRouter, HTTPException, status
+from pydantic import EmailStr
 
 from app.schemas.account import CheckAccountResponse
 from app.services.auth_service import AccountAlreadyExistsError, AuthService
@@ -8,7 +9,7 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 
 
 @router.get("/api/v1/check_account/{account}", response_model=CheckAccountResponse)
-async def check_account(account: str) -> CheckAccountResponse:
+async def check_account(account: EmailStr) -> CheckAccountResponse:
     """check_account Проверяет, свободна ли почта, и запускает первый шаг регистрации.
 
     Если почта свободна — создаёт Account и Invite, 'отправляет' код на почту.

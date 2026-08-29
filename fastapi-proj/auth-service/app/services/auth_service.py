@@ -3,6 +3,9 @@ import secrets as secrets_lib
 from datetime import datetime
 from uuid import UUID, uuid4
 
+from sqlalchemy.exc import IntegrityError
+
+from app.core.event_types import EventType
 from app.core.exceptions import (
     AccountAlreadyExistsError,
     InviteAccountMismatchError,
@@ -20,7 +23,6 @@ from app.models.member import Role as MemberRole
 from app.models.secrets import Secrets
 from app.models.user import User
 from app.uow import UnitOfWork
-from sqlalchemy.exc import IntegrityError
 
 logger = logging.getLogger(__name__)
 
@@ -171,7 +173,9 @@ class AuthService:
         user = User(id=uuid4(), name=first_name, surname=last_name)
         self.uow.users.add(user)
 
-        await self.uow.session.flush()  # явный flush нужен, чтобы User гарантированно был вставлен в БД раньше, чем UPDATE invite сошлётся на его id через user_id (FK)
+        # явный flush нужен, чтобы User гарантированно был вставлен в БД раньше,
+        # чем UPDATE invite сошлётся на его id через user_id (FK)
+        await self.uow.session.flush()
 
         member = Member(
             id=uuid4(),
@@ -194,7 +198,7 @@ class AuthService:
 
         self.uow.outbox.add(
             build_outbox_message(
-                event_type="company.created",
+                event_type=EventType.COMPANY_CREATED,
                 aggregate_id=company.id,
                 payload={
                     "company_id": str(company.id),
@@ -204,7 +208,7 @@ class AuthService:
         )
         self.uow.outbox.add(
             build_outbox_message(
-                event_type="employee.created",
+                event_type=EventType.EMPLOYEE_CREATED,
                 aggregate_id=user.id,
                 payload={
                     "employee_id": str(user.id),

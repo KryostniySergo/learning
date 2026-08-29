@@ -19,7 +19,7 @@ class InviteRepository(BaseRepository[Invite]):
         result = await self.session.execute(select(Invite).where(Invite.token == token))
         return result.scalar_one_or_none()
 
-    async def get_by_account_id(self, account_id):
+    async def get_by_account_id(self, account_id) -> Invite | None:
         """Находит самый свежий Invite для данного account_id.
 
         Args:

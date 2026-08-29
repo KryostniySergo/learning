@@ -3,8 +3,6 @@ import secrets as secrets_lib
 from datetime import datetime
 from uuid import UUID, uuid4
 
-from sqlalchemy.exc import IntegrityError
-
 from app.core.exceptions import (
     AccountAlreadyExistsError,
     InviteAccountMismatchError,
@@ -22,6 +20,7 @@ from app.models.member import Role as MemberRole
 from app.models.secrets import Secrets
 from app.models.user import User
 from app.uow import UnitOfWork
+from sqlalchemy.exc import IntegrityError
 
 logger = logging.getLogger(__name__)
 
@@ -171,6 +170,8 @@ class AuthService:
 
         user = User(id=uuid4(), name=first_name, surname=last_name)
         self.uow.users.add(user)
+
+        await self.uow.session.flush()  # явный flush нужен, чтобы User гарантированно был вставлен в БД раньше, чем UPDATE invite сошлётся на его id через user_id (FK)
 
         member = Member(
             id=uuid4(),

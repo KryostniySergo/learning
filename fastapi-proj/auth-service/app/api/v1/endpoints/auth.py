@@ -8,7 +8,7 @@ from app.core.exceptions import (
     InviteNotFoundError,
 )
 from app.schemas.account import CheckAccountResponse
-from app.schemas.auth import SignUpRequest, SignUpResponse
+from app.schemas.auth import SignUpCompleteRequest, SignUpCompleteResponse, SignUpRequest, SignUpResponse
 from app.services.auth_service import AccountAlreadyExistsError, AuthService
 from app.uow import UnitOfWork
 
@@ -77,3 +77,42 @@ async def sign_up(body: SignUpRequest) -> SignUpResponse:
                 detail="Invite is not in a valid state for this action",
             ) from exc
         return SignUpResponse(confirmed=True)
+
+
+@router.post("/api/v1/sign-up-complete/", response_model=SignUpCompleteResponse)
+async def sign_up_complete(body: SignUpCompleteRequest) -> SignUpCompleteResponse:
+    """Завершает регистрацию компании (шаг 3).
+
+    Создаёт компанию и сотрудника-администратора этой компании.
+
+    Args:
+        body (SignUpCompleteRequest): почта, пароль, имя, фамилия и название компании.
+
+    Returns:
+        SignUpCompleteResponse: id созданных компании и пользователя.
+
+    Raises:
+        HTTPException: 404, если инвайт не найден; 409, если инвайт не в статусе
+            IN_PROGRESS (шаг 2 не пройден или регистрация уже завершена).
+    """
+    async with UnitOfWork() as uow:
+        service = AuthService(uow)
+        try:
+            company_id, user_id = await service.sign_up_complete(
+                email=body.account,
+                password=body.password,
+                first_name=body.first_name,
+                last_name=body.last_name,
+                company_name=body.company_name,
+            )
+        except InviteNotFoundError as exc:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Invite not found",
+            ) from exc
+        except InviteInvalidStatusError as exc:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Invite is not in a valid state for this action",
+            ) from exc
+    return SignUpCompleteResponse(company_id=company_id, user_id=user_id)

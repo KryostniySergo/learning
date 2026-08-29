@@ -7,6 +7,10 @@ class Settings(BaseSettings):
     # Outbox settings
     producer_name: str = "auth-service"
 
+    # Kafka settings
+    kafka_bootstrap_servers: str = "localhost:9092"
+    kafka_topic: str = "auth-events"
+
     # DB settings
     db_name: str
     db_port: int = 5432

@@ -10,7 +10,7 @@ from sqlalchemy.orm import Mapped, mapped_column
 from app.models.base import Base
 
 
-class InMessageStatus(str, Enum):
+class InboxMessageStatus(str, Enum):
     RECEIVED = "received"
     PROCESSED = "processed"
     FAILED = "failed"
@@ -23,4 +23,4 @@ class InboxMessage(Base):
     consumer_name: Mapped[str] = mapped_column(String(100))  # какой обработчик/сервис это принял
 
     received_at: Mapped[datetime] = mapped_column(TIMESTAMP, default=datetime.now)
-    status: Mapped[InMessageStatus] = mapped_column(SqlEnum(InMessageStatus), default=InMessageStatus.RECEIVED)
+    status: Mapped[InboxMessageStatus] = mapped_column(SqlEnum(InboxMessageStatus), default=InboxMessageStatus.RECEIVED)

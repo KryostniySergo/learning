@@ -34,13 +34,13 @@ class UnitOfWork:
         """
         self.session = async_session_maker()
 
-        self.companies = CompanyRepository(self.session)
-        self.inboxes = InboxMessageRepository(self.session)
-        self.outboxes = OutboxMessageRepository(self.session)
-        self.positions = PositionRepository(self.session)
+        self.company = CompanyRepository(self.session)
+        self.inbox = InboxMessageRepository(self.session)
+        self.outbox = OutboxMessageRepository(self.session)
+        self.position = PositionRepository(self.session)
         self.struct_adm = StructAdmRepository(self.session)
-        self.struct_adm_positions = StructAdmPositionRepository(self.session)
-        self.users = UserRepository(self.session)
+        self.struct_adm_position = StructAdmPositionRepository(self.session)
+        self.user = UserRepository(self.session)
         self.user_positions = UserPositionRepository(self.session)
 
         return self

@@ -7,10 +7,13 @@ class Settings(BaseSettings):
     # Outbox settings
     producer_name: str = "org-service"
 
+    # Inbox settings
+    consumer_name: str = "org-service"
+
     # Kafka settings
     kafka_bootstrap_servers: str = "localhost:9092"
-    kafka_consumer_topic: str = "auth-events"  # топик, который слушаем (события ОТ auth-service)
-    kafka_consumer_group: str = "org-service"  # имя consumer group для этого сервиса
+    kafka_consumer_topic: str = "auth-events"
+    kafka_consumer_group: str = "org-service"
 
     # DB settings
     db_name: str

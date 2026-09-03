@@ -5,8 +5,7 @@ from uuid import uuid4
 from app.core.config import settings
 from app.core.event_types import EventType
 from app.models.company import Company
-from app.models.inbox_message import InboxMessage
-from app.models.inbox_message import Status as InboxStatus
+from app.models.inbox_message import InboxMessage, InboxMessageStatus
 from app.models.user import User
 from app.schemas.event_envelope import EventEnvelope
 from app.schemas.event_payloads import CompanyCreatedPayload, EmployeeCreatedPayload
@@ -69,7 +68,7 @@ class InboxService:
                 event_type=envelope.event_type,
                 consumer_name=settings.consumer_name,
                 received_at=datetime.now(),
-                status=InboxStatus.PROCESSED,
+                status=InboxMessageStatus.PROCESSED,
             )
         )
 

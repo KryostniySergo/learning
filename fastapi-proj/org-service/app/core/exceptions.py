@@ -22,6 +22,22 @@ class UserNotFoundError(Exception):
     """
 
 
+class PositionAlreadyLinkedError(Exception):
+    """Исключение, если должность уже привязана к этому подразделению."""
+
+
+class PositionNotLinkedError(Exception):
+    """Исключение, если должность не привязана к указанному подразделению."""
+
+
+class UserAlreadyAssignedError(Exception):
+    """Исключение, если сотрудник уже назначен на эту должность."""
+
+
+class UserNotAssignedError(Exception):
+    """Исключение, если сотрудник не назначен на указанную должность."""
+
+
 class StructAdmHasChildrenError(Exception):
     """Исключение при попытке удалить подразделение, у которого есть дочерние."""
 

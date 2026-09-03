@@ -1,16 +1,19 @@
 import logging
 
-from fastapi import FastAPI, Request, status
-from fastapi.responses import JSONResponse
-
 from app.core.exceptions import (
     CrossCompanyAccessError,
     NotAuthorizedError,
     ParentNotFoundError,
+    PositionAlreadyLinkedError,
     PositionNotFoundError,
+    PositionNotLinkedError,
     StructAdmNotFoundError,
+    UserAlreadyAssignedError,
+    UserNotAssignedError,
     UserNotFoundError,
 )
+from fastapi import FastAPI, Request, status
+from fastapi.responses import JSONResponse
 
 logger = logging.getLogger(__name__)
 
@@ -71,6 +74,26 @@ def register_exception_handlers(app: FastAPI) -> None:
     async def handle_position_not_found(request: Request, exc: PositionNotFoundError) -> JSONResponse:
         """Отдаёт 404, если должность не найдена."""
         return _error_response(status.HTTP_404_NOT_FOUND, "Position not found")
+
+    @app.exception_handler(PositionAlreadyLinkedError)
+    async def handle_position_already_linked(request: Request, exc: PositionAlreadyLinkedError) -> JSONResponse:
+        """Отдаёт 409, если должность уже привязана к подразделению."""
+        return _error_response(status.HTTP_409_CONFLICT, "Position already linked to this struct adm")
+
+    @app.exception_handler(PositionNotLinkedError)
+    async def handle_position_not_linked(request: Request, exc: PositionNotLinkedError) -> JSONResponse:
+        """Отдаёт 404, если должность не привязана к подразделению."""
+        return _error_response(status.HTTP_404_NOT_FOUND, "Position is not linked to this struct adm")
+
+    @app.exception_handler(UserAlreadyAssignedError)
+    async def handle_user_already_assigned(request: Request, exc: UserAlreadyAssignedError) -> JSONResponse:
+        """Отдаёт 409, если сотрудник уже назначен на эту должность."""
+        return _error_response(status.HTTP_409_CONFLICT, "User already assigned to this position")
+
+    @app.exception_handler(UserNotAssignedError)
+    async def handle_user_not_assigned(request: Request, exc: UserNotAssignedError) -> JSONResponse:
+        """Отдаёт 404, если сотрудник не назначен на указанную должность."""
+        return _error_response(status.HTTP_404_NOT_FOUND, "User is not assigned to this position")
 
     @app.exception_handler(Exception)
     async def handle_unexpected(request: Request, exc: Exception) -> JSONResponse:

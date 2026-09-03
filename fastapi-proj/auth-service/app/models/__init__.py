@@ -1,3 +1,4 @@
+# auth-service/app/models/__init__.py
 from app.models.account import Account
 from app.models.base import Base
 from app.models.company import Company

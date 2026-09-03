@@ -1,0 +1,1 @@
+# auth-service/app/adapters/__init__.py

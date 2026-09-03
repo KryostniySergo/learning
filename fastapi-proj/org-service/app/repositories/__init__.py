@@ -1,3 +1,4 @@
+# org-service/app/repositories/__init__.py
 from .company_repository import CompanyRepository
 from .inbox_message_repository import InboxMessageRepository
 from .outbox_message_repository import OutboxMessageRepository

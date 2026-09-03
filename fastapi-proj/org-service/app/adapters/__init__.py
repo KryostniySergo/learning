@@ -1,0 +1,1 @@
+# org-service/app/adapters/__init__.py

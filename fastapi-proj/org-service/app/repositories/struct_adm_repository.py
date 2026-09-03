@@ -53,7 +53,7 @@ class StructAdmRepository(BaseRepository[StructAdm]):
         return node
 
     async def get_descendants(self, path: Ltree, include_self: bool = False) -> list[StructAdm]:
-        """Находит все узлы внутри поддерева заданного пути.
+        """Находит все неудалённые узлы внутри поддерева заданного пути.
 
         Args:
             path (Ltree): путь узла, поддерево которого нужно получить.
@@ -62,7 +62,7 @@ class StructAdmRepository(BaseRepository[StructAdm]):
         Returns:
             list[StructAdm]: узлы поддерева, отсортированные по глубине пути.
         """
-        query = select(StructAdm).where(StructAdm.path.descendant_of(path))
+        query = select(StructAdm).where(StructAdm.path.descendant_of(path)).where(StructAdm.deleted_at.is_(None))
         if not include_self:
             query = query.where(StructAdm.path != path)
         query = query.order_by(StructAdm.path)
@@ -70,7 +70,7 @@ class StructAdmRepository(BaseRepository[StructAdm]):
         return list(result.scalars().all())
 
     async def get_ancestors(self, path: Ltree) -> list[StructAdm]:
-        """Находит всех предков узла (путь от корня до родителя).
+        """Находит всех неудалённых предков узла (путь от корня до родителя).
 
         Args:
             path (Ltree): путь узла, чьих предков нужно получить.
@@ -82,13 +82,14 @@ class StructAdmRepository(BaseRepository[StructAdm]):
             select(StructAdm)
             .where(StructAdm.path.ancestor_of(path))
             .where(StructAdm.path != path)
+            .where(StructAdm.deleted_at.is_(None))
             .order_by(StructAdm.path)
         )
         result = await self.session.execute(query)
         return list(result.scalars().all())
 
     async def get_by_company(self, company_id: PyUUID) -> list[StructAdm]:
-        """Находит все узлы оргструктуры конкретной компании.
+        """Находит все неудалённые узлы оргструктуры конкретной компании.
 
         Args:
             company_id (PyUUID): id компании.
@@ -96,6 +97,11 @@ class StructAdmRepository(BaseRepository[StructAdm]):
         Returns:
             list[StructAdm]: все узлы компании, отсортированные по пути.
         """
-        query = select(StructAdm).where(StructAdm.company_id == company_id).order_by(StructAdm.path)
+        query = (
+            select(StructAdm)
+            .where(StructAdm.company_id == company_id)
+            .where(StructAdm.deleted_at.is_(None))
+            .order_by(StructAdm.path)
+        )
         result = await self.session.execute(query)
         return list(result.scalars().all())

@@ -11,8 +11,8 @@ from app.repositories.outbox_message_repository import OutboxMessageRepository
 from app.repositories.position_repository import PositionRepository
 from app.repositories.struct_adm_position_repository import StructAdmPositionRepository
 from app.repositories.struct_adm_repository import StructAdmRepository
+from app.repositories.user_position_repository import UserPositionRepository
 from app.repositories.user_repository import UserRepository
-from app.repositories.users_position_repository import UserPositionRepository
 
 logger = logging.getLogger(__name__)
 
@@ -41,7 +41,7 @@ class UnitOfWork:
         self.struct_adm = StructAdmRepository(self.session)
         self.struct_adm_position = StructAdmPositionRepository(self.session)
         self.user = UserRepository(self.session)
-        self.user_positions = UserPositionRepository(self.session)
+        self.user_position = UserPositionRepository(self.session)
 
         return self
 

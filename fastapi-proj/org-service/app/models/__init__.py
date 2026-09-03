@@ -6,7 +6,7 @@ from app.models.position import Position
 from app.models.struct_adm import StructAdm
 from app.models.struct_adm_position import StructAdmPosition
 from app.models.user import User
-from app.models.users_position import UserPosition
+from app.models.user_position import UserPosition
 
 __all__ = [
     "Base",

@@ -1,7 +1,7 @@
 from uuid import UUID as PyUUID
 from uuid import uuid4
 
-from sqlalchemy import ForeignKey, String
+from sqlalchemy import ForeignKey, Index, String
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy_utils import Ltree, LtreeType
 
@@ -16,3 +16,5 @@ class StructAdm(Base, TimestampMixin):
     path: Mapped[Ltree] = mapped_column(LtreeType, nullable=False, unique=True)
     company_id: Mapped[PyUUID] = mapped_column(ForeignKey("company.id"), nullable=False)
     manager_id: Mapped[PyUUID | None] = mapped_column(ForeignKey("user.id"), nullable=True)
+
+    __table_args__ = (Index("ix_struct_adm_path_gist", "path", postgresql_using="gist"),)

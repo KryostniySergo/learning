@@ -24,3 +24,15 @@ class InvalidCredentialsError(Exception):
 
 class NotAuthenticatedError(Exception):
     """Исключение, если запрос не содержит валидного токена."""
+
+
+class NotAuthorizedError(Exception):
+    """Исключение, если у пользователя недостаточно прав для операции."""
+
+
+class EmployeeAlreadyInCompanyError(Exception):
+    """Исключение, если сотрудник уже состоит в этой компании."""
+
+
+class CompanyNotFoundError(Exception):
+    """Исключение, если компания не найдена."""

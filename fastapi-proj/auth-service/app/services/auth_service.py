@@ -175,9 +175,7 @@ class AuthService:
         user = User(id=uuid4(), name=first_name, surname=last_name)
         self.uow.users.add(user)
 
-        # явный flush нужен, чтобы User гарантированно был вставлен в БД
-        # раньше, чем UPDATE invite сошлётся на его id через user_id (FK)
-        await self.uow.session.flush()
+        await self.uow.session.flush()  # ← здесь, до создания Member/Secrets
 
         member = Member(
             id=uuid4(),
@@ -194,6 +192,10 @@ class AuthService:
             password_hash=hash_password(password),
         )
         self.uow.secrets.add(secrets_obj)
+
+        # явный flush нужен, чтобы User гарантированно был вставлен в БД
+        # раньше, чем UPDATE invite сошлётся на его id через user_id (FK)
+        await self.uow.session.flush()
 
         invite.status = InviteStatus.COMPLETED
         invite.user_id = user.id
@@ -226,19 +228,24 @@ class AuthService:
 
         return company.id, user.id
 
-    async def login(self, email: str, password: str) -> str:
+    async def login(self, email: str, password: str, company_id: UUID | None = None) -> str:
         """Аутентифицирует пользователя по почте и паролю, выдавая JWT.
+
+        Если пользователь состоит в нескольких компаниях, нужную можно указать
+        явно через company_id. Без него берётся самое раннее членство.
 
         Args:
             email (str): почта пользователя.
             password (str): пароль в открытом виде.
+            company_id (UUID | None): компания, под которой нужно войти.
 
         Returns:
             str: подписанный access-токен.
 
         Raises:
             InvalidCredentialsError: если почта не найдена, регистрация не завершена,
-                пароль неверен или у пользователя нет действующего членства в компании.
+                пароль неверен или у пользователя нет действующего членства в
+                указанной компании.
         """
         account = await self.uow.accounts.get_by_email(email)
         if account is None:
@@ -254,7 +261,10 @@ class AuthService:
             logger.info("login failed: wrong password for %s", email)
             raise InvalidCredentialsError
 
-        member = await self.uow.members.get_by_user_id(secrets_obj.user_id)
+        if company_id is None:
+            member = await self.uow.members.get_by_user_id(secrets_obj.user_id)
+        else:
+            member = await self.uow.members.get_by_user_and_company(secrets_obj.user_id, company_id)
         if member is None:
             logger.warning("login failed: no membership for user %s", secrets_obj.user_id)
             raise InvalidCredentialsError

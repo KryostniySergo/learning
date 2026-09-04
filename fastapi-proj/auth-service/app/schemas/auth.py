@@ -38,6 +38,7 @@ class LoginRequest(BaseModel):
 
     account: EmailStr
     password: str = Field(alias="pass")
+    company_id: UUID | None = None
 
 
 class LoginResponse(BaseModel):
@@ -45,3 +46,31 @@ class LoginResponse(BaseModel):
 
     access_token: str
     token_type: str = "bearer"
+
+
+class CreateEmployeeRequest(BaseModel):
+    """Тело запроса на создание сотрудника администратором."""
+
+    account: EmailStr
+    first_name: str
+    last_name: str
+
+
+class CreateEmployeeResponse(BaseModel):
+    """Ответ на создание сотрудника."""
+
+    employee_id: UUID
+    invite_sent: bool
+
+
+class RegisterEmployeeRequest(BaseModel):
+    """Тело запроса на завершение регистрации сотрудника по инвайту."""
+
+    invite_token: str
+    password: str = Field(alias="pass")
+
+
+class RegisterEmployeeResponse(BaseModel):
+    """Ответ на завершение регистрации сотрудника."""
+
+    employee_id: UUID

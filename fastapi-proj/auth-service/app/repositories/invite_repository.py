@@ -19,7 +19,7 @@ class InviteRepository(BaseRepository[Invite]):
         result = await self.session.execute(select(Invite).where(Invite.token == token))
         return result.scalar_one_or_none()
 
-    async def get_by_account_id(self, account_id) -> Invite | None:
+    async def get_by_account_id(self, account_id):
         """Находит самый свежий Invite для данного account_id.
 
         Args:
@@ -29,9 +29,28 @@ class InviteRepository(BaseRepository[Invite]):
             Invite | None: найденный инвайт, либо None, если для аккаунта нет инвайтов.
         """
         result = await self.session.execute(
-            select(Invite)
+            select(Invite).where(Invite.account_id == account_id).order_by(Invite.created_at.desc()).limit(1)
+        )
+        return result.scalar_one_or_none()
+
+    async def get_user_id_by_account(self, account_id):
+        """Находит user_id из последнего инвайта для данного аккаунта.
+
+        Нужен, когда регистрация по почте не завершена (нет Secrets), но
+        пользователь уже создан администратором — связь account-user в этот
+        момент существует только через инвайт.
+
+        Args:
+            account_id (UUID): идентификатор аккаунта.
+
+        Returns:
+            UUID | None: идентификатор пользователя, либо None.
+        """
+        result = await self.session.execute(
+            select(Invite.user_id)
             .where(Invite.account_id == account_id)
+            .where(Invite.user_id.is_not(None))
             .order_by(Invite.created_at.desc())
-            .limit(1)  # Нужно чтобы брать самый свежий инвайт
+            .limit(1)
         )
         return result.scalar_one_or_none()

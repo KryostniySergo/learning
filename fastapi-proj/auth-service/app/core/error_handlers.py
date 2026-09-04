@@ -5,12 +5,14 @@ from fastapi.responses import JSONResponse
 
 from app.core.exceptions import (
     AccountAlreadyExistsError,
+    EmployeeAlreadyInCompanyError,
     InvalidCredentialsError,
     InviteAccountMismatchError,
     InviteExpiredError,
     InviteInvalidStatusError,
     InviteNotFoundError,
     NotAuthenticatedError,
+    NotAuthorizedError,
 )
 
 logger = logging.getLogger(__name__)
@@ -77,6 +79,16 @@ def register_exception_handlers(app: FastAPI) -> None:
     async def handle_not_authenticated(request: Request, exc: NotAuthenticatedError) -> JSONResponse:
         """Отдаёт 401, если запрос без валидного токена."""
         return _error_response(status.HTTP_401_UNAUTHORIZED, "Not authenticated")
+
+    @app.exception_handler(NotAuthorizedError)
+    async def handle_not_authorized(request: Request, exc: NotAuthorizedError) -> JSONResponse:
+        """Отдаёт 403, если у пользователя нет прав на операцию."""
+        return _error_response(status.HTTP_403_FORBIDDEN, "Admin role required")
+
+    @app.exception_handler(EmployeeAlreadyInCompanyError)
+    async def handle_employee_already_in_company(request: Request, exc: EmployeeAlreadyInCompanyError) -> JSONResponse:
+        """Отдаёт 409, если сотрудник уже состоит в этой компании."""
+        return _error_response(status.HTTP_409_CONFLICT, "Employee already in this company")
 
     @app.exception_handler(Exception)
     async def handle_unexpected(request: Request, exc: Exception) -> JSONResponse:

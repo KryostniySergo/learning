@@ -83,5 +83,5 @@ async def login(body: LoginRequest) -> LoginResponse:
         LoginResponse: JWT для последующих запросов к сервисам.
     """
     async with UnitOfWork() as uow:
-        token = await AuthService(uow).login(body.account, body.password)
+        token = await AuthService(uow).login(body.account, body.password, body.company_id)
     return LoginResponse(access_token=token)

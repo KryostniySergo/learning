@@ -10,6 +10,10 @@ class Settings(BaseSettings):
     # Inbox settings
     consumer_name: str = "org-service"
 
+    # JWT settings
+    jwt_secret: str = "change-me-in-production"
+    jwt_algorithm: str = "HS256"
+
     # Kafka settings
     kafka_bootstrap_servers: str = "localhost:9092"
     kafka_consumer_topic: str = "auth-events"

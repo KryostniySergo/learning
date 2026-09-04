@@ -2,6 +2,7 @@ import logging
 
 from app.core.exceptions import (
     CrossCompanyAccessError,
+    NotAuthenticatedError,
     NotAuthorizedError,
     ParentNotFoundError,
     PositionAlreadyLinkedError,
@@ -40,6 +41,11 @@ def register_exception_handlers(app: FastAPI) -> None:
     Args:
         app (FastAPI): экземпляр приложения, к которому привязываются обработчики.
     """
+
+    @app.exception_handler(NotAuthenticatedError)
+    async def handle_not_authenticated(request: Request, exc: NotAuthenticatedError) -> JSONResponse:
+        """Отдаёт 401, если запрос без валидного токена."""
+        return _error_response(status.HTTP_401_UNAUTHORIZED, "Not authenticated")
 
     @app.exception_handler(NotAuthorizedError)
     async def handle_not_authorized(request: Request, exc: NotAuthorizedError) -> JSONResponse:

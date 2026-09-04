@@ -1,22 +1,39 @@
-from uuid import UUID
+from typing import Annotated
 
-from app.schemas.current_user import CurrentUser, Role
+from fastapi import Depends
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
-# TODO: заменить на реальный разбор JWT, когда в auth-service появится выдача токенов.
-# Сейчас возвращает фиктивного администратора, чтобы можно было разрабатывать
-# и тестировать сервисный слой до готовности аутентификации.
-MOCK_USER_ID = UUID("d8ac40c0-c58a-4817-ada0-23a63a883604")
-MOCK_COMPANY_ID = UUID("816764c8-a828-4fb4-b762-4f26815a6fb8")
+from app.core.exceptions import NotAuthenticatedError
+from app.core.jwt import InvalidTokenError, decode_access_token
+from app.schemas.current_user import CurrentUser
+
+bearer_scheme = HTTPBearer(auto_error=False)
 
 
-async def get_current_user() -> CurrentUser:
-    """Возвращает контекст текущего пользователя.
+async def get_current_user(
+    credentials: Annotated[HTTPAuthorizationCredentials | None, Depends(bearer_scheme)],
+) -> CurrentUser:
+    """Извлекает и валидирует контекст пользователя из JWT в заголовке Authorization.
+
+    Args:
+        credentials (HTTPAuthorizationCredentials | None): Bearer-токен из заголовка.
 
     Returns:
-        CurrentUser: контекст с user_id, company_id и ролью.
+        CurrentUser: контекст пользователя с user_id, company_id и ролью.
+
+    Raises:
+        NotAuthenticatedError: если заголовок отсутствует или токен невалиден.
     """
+    if credentials is None:
+        raise NotAuthenticatedError
+
+    try:
+        payload = decode_access_token(credentials.credentials)
+    except InvalidTokenError as exc:
+        raise NotAuthenticatedError from exc
+
     return CurrentUser(
-        user_id=MOCK_USER_ID,
-        company_id=MOCK_COMPANY_ID,
-        role=Role.ADMIN,
+        user_id=payload["sub"],
+        company_id=payload["company_id"],
+        role=payload["role"],
     )

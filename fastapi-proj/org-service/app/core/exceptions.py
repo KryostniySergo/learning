@@ -44,3 +44,7 @@ class StructAdmHasChildrenError(Exception):
 
 class CrossCompanyAccessError(Exception):
     """Исключение при попытке обратиться к сущности другой компании."""
+
+
+class NotAuthenticatedError(Exception):
+    """Исключение, если запрос не содержит валидного токена."""

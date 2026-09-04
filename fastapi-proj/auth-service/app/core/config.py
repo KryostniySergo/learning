@@ -11,6 +11,11 @@ class Settings(BaseSettings):
     kafka_bootstrap_servers: str = "localhost:9092"
     kafka_topic: str = "auth-events"
 
+    # JWT settings
+    jwt_secret: str = "change-me-in-production"
+    jwt_algorithm: str = "HS256"
+    jwt_expire_minutes: int = 60
+
     # DB settings
     db_name: str
     db_port: int = 5432

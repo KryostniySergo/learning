@@ -16,3 +16,11 @@ class InviteInvalidStatusError(Exception):
 
 class InviteAccountMismatchError(Exception):
     """Исключение, если токен инвайта не соответствует указанной почте."""
+
+
+class InvalidCredentialsError(Exception):
+    """Исключение при неверной паре почта/пароль."""
+
+
+class NotAuthenticatedError(Exception):
+    """Исключение, если запрос не содержит валидного токена."""

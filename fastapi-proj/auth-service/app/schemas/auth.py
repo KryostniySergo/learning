@@ -31,3 +31,17 @@ class SignUpCompleteResponse(BaseModel):
 
     company_id: UUID
     user_id: UUID
+
+
+class LoginRequest(BaseModel):
+    """Тело запроса на вход в систему."""
+
+    account: EmailStr
+    password: str = Field(alias="pass")
+
+
+class LoginResponse(BaseModel):
+    """Ответ с access-токеном."""
+
+    access_token: str
+    token_type: str = "bearer"

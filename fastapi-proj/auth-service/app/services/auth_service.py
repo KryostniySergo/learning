@@ -8,13 +8,15 @@ from sqlalchemy.exc import IntegrityError
 from app.core.event_types import EventType
 from app.core.exceptions import (
     AccountAlreadyExistsError,
+    InvalidCredentialsError,
     InviteAccountMismatchError,
     InviteExpiredError,
     InviteInvalidStatusError,
     InviteNotFoundError,
 )
+from app.core.jwt import create_access_token
 from app.core.outbox import build_outbox_message
-from app.core.security import hash_password
+from app.core.security import hash_password, verify_password
 from app.models.account import Account
 from app.models.company import Company
 from app.models.invite import Invite, InviteStatus
@@ -42,7 +44,7 @@ class AuthService:
         """Проверяет, свободна ли почта, и если да — создаёт Account и Invite.
 
         Является первым шагом флоу регистрации. При успехе генерирует токен
-        инвайта и 'отправляет' его на почт.
+        инвайта и 'отправляет' его на почту (в учебном проекте — логирует).
 
         Args:
             email (str): почта, которую нужно проверить и зарегистрировать.
@@ -77,7 +79,7 @@ class AuthService:
             raise AccountAlreadyExistsError from exc
 
         logger.info("check_account: invite created for %s (account_id=%s)", email, account.id)
-        # "отправка" кода
+        # "отправка" кода — для учебного проекта просто логируем на отдельном уровне
         logger.debug("[MAIL MOCK] Invite token for %s: %s", email, invite.token)
 
         return True
@@ -173,8 +175,8 @@ class AuthService:
         user = User(id=uuid4(), name=first_name, surname=last_name)
         self.uow.users.add(user)
 
-        # явный flush нужен, чтобы User гарантированно был вставлен в БД раньше,
-        # чем UPDATE invite сошлётся на его id через user_id (FK)
+        # явный flush нужен, чтобы User гарантированно был вставлен в БД
+        # раньше, чем UPDATE invite сошлётся на его id через user_id (FK)
         await self.uow.session.flush()
 
         member = Member(
@@ -223,3 +225,43 @@ class AuthService:
         logger.info("sign_up_complete: company=%s user=%s created for %s", company.id, user.id, email)
 
         return company.id, user.id
+
+    async def login(self, email: str, password: str) -> str:
+        """Аутентифицирует пользователя по почте и паролю, выдавая JWT.
+
+        Args:
+            email (str): почта пользователя.
+            password (str): пароль в открытом виде.
+
+        Returns:
+            str: подписанный access-токен.
+
+        Raises:
+            InvalidCredentialsError: если почта не найдена, регистрация не завершена,
+                пароль неверен или у пользователя нет действующего членства в компании.
+        """
+        account = await self.uow.accounts.get_by_email(email)
+        if account is None:
+            logger.info("login failed: unknown account %s", email)
+            raise InvalidCredentialsError
+
+        secrets_obj = await self.uow.secrets.get_by_account_id(account.id)
+        if secrets_obj is None:
+            logger.info("login failed: registration not completed for %s", email)
+            raise InvalidCredentialsError
+
+        if not verify_password(password, secrets_obj.password_hash):
+            logger.info("login failed: wrong password for %s", email)
+            raise InvalidCredentialsError
+
+        member = await self.uow.members.get_by_user_id(secrets_obj.user_id)
+        if member is None:
+            logger.warning("login failed: no membership for user %s", secrets_obj.user_id)
+            raise InvalidCredentialsError
+
+        logger.info("login successful for %s (user=%s)", email, secrets_obj.user_id)
+        return create_access_token(
+            user_id=secrets_obj.user_id,
+            company_id=member.company_id,
+            role=member.role.value,
+        )

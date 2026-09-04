@@ -5,10 +5,12 @@ from fastapi.responses import JSONResponse
 
 from app.core.exceptions import (
     AccountAlreadyExistsError,
+    InvalidCredentialsError,
     InviteAccountMismatchError,
     InviteExpiredError,
     InviteInvalidStatusError,
     InviteNotFoundError,
+    NotAuthenticatedError,
 )
 
 logger = logging.getLogger(__name__)
@@ -65,6 +67,16 @@ def register_exception_handlers(app: FastAPI) -> None:
     async def handle_invite_invalid_status(request: Request, exc: InviteInvalidStatusError) -> JSONResponse:
         """Отдаёт 409, если инвайт не в том статусе для запрошенного перехода."""
         return _error_response(status.HTTP_409_CONFLICT, "Invite is not in a valid state for this action")
+
+    @app.exception_handler(InvalidCredentialsError)
+    async def handle_invalid_credentials(request: Request, exc: InvalidCredentialsError) -> JSONResponse:
+        """Отдаёт 401 при неверной паре почта/пароль."""
+        return _error_response(status.HTTP_401_UNAUTHORIZED, "Invalid credentials")
+
+    @app.exception_handler(NotAuthenticatedError)
+    async def handle_not_authenticated(request: Request, exc: NotAuthenticatedError) -> JSONResponse:
+        """Отдаёт 401, если запрос без валидного токена."""
+        return _error_response(status.HTTP_401_UNAUTHORIZED, "Not authenticated")
 
     @app.exception_handler(Exception)
     async def handle_unexpected(request: Request, exc: Exception) -> JSONResponse:

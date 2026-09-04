@@ -3,6 +3,8 @@ from pydantic import EmailStr
 
 from app.schemas.account import CheckAccountResponse
 from app.schemas.auth import (
+    LoginRequest,
+    LoginResponse,
     SignUpCompleteRequest,
     SignUpCompleteResponse,
     SignUpRequest,
@@ -68,3 +70,18 @@ async def sign_up_complete(body: SignUpCompleteRequest) -> SignUpCompleteRespons
             company_name=body.company_name,
         )
     return SignUpCompleteResponse(company_id=company_id, user_id=user_id)
+
+
+@router.post("/login/", response_model=LoginResponse)
+async def login(body: LoginRequest) -> LoginResponse:
+    """Аутентифицирует пользователя и выдаёт access-токен.
+
+    Args:
+        body (LoginRequest): почта и пароль.
+
+    Returns:
+        LoginResponse: JWT для последующих запросов к сервисам.
+    """
+    async with UnitOfWork() as uow:
+        token = await AuthService(uow).login(body.account, body.password)
+    return LoginResponse(access_token=token)

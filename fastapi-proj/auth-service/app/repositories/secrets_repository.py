@@ -20,3 +20,16 @@ class SecretsRepository(BaseRepository[Secrets]):
         """
         result = await self.session.execute(select(Secrets).where(Secrets.user_id == user_id))
         return result.scalar_one_or_none()
+
+    async def get_by_account_id(self, account_id: UUID) -> Secrets | None:
+        """Находит Secrets по идентификатору аккаунта (почты).
+
+        Args:
+            account_id (UUID): идентификатор аккаунта.
+
+        Returns:
+            Secrets | None: найденная запись секретов, либо None, если регистрация
+                по этой почте ещё не завершена.
+        """
+        result = await self.session.execute(select(Secrets).where(Secrets.account_id == account_id))
+        return result.scalar_one_or_none()

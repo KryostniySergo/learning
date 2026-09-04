@@ -3,6 +3,7 @@ import logging
 
 from app.adapters.kafka_consumer import KafkaConsumerAdapter
 from app.core.config import settings
+from app.core.logging import setup_logging
 from app.services.inbox_service import InboxService
 from app.uow import UnitOfWork
 
@@ -67,4 +68,5 @@ async def main() -> None:
 
 
 if __name__ == "__main__":
+    setup_logging()
     asyncio.run(main())

@@ -97,6 +97,12 @@ class InboxService:
             payload (dict): payload события, содержит company_id и name.
         """
         data = CompanyCreatedPayload(**payload)
+
+        existing = await self.uow.company.get_by_id(data.company_id)
+        if existing is not None:
+            logger.info("company %s already in replica, skipping", data.company_id)
+            return
+
         company = Company(id=data.company_id, name=data.name)
         self.uow.company.add(company)
 
@@ -107,6 +113,16 @@ class InboxService:
             payload (dict): payload события, содержит employee_id, name, surname, company_id.
         """
         data = EmployeeCreatedPayload(**payload)
+
+        existing = await self.uow.user.get_by_id(data.employee_id)
+        if existing is not None:
+            # пользователь мог быть добавлен во вторую компанию — реплика хранит
+            # только первую, поэтому обновляем лишь имя и не трогаем company_id
+            existing.name = data.name
+            existing.surname = data.surname
+            logger.info("user %s already in replica, updated names only", data.employee_id)
+            return
+
         user = User(
             id=data.employee_id,
             name=data.name,

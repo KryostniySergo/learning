@@ -20,10 +20,10 @@ class Settings(BaseSettings):
     kafka_consumer_group: str = "org-service"
 
     # DB settings
-    db_name: str
+    db_name: str = "org_db"
     db_port: int = 5432
-    db_user: str
-    db_pass: str
+    db_user: str = "postgres"
+    db_pass: str = "12345"
     db_host: str = "localhost"
 
     @property

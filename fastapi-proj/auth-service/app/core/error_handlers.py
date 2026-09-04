@@ -13,6 +13,7 @@ from app.core.exceptions import (
     InviteNotFoundError,
     NotAuthenticatedError,
     NotAuthorizedError,
+    UserNotFoundError,
 )
 
 logger = logging.getLogger(__name__)
@@ -94,4 +95,9 @@ def register_exception_handlers(app: FastAPI) -> None:
     async def handle_unexpected(request: Request, exc: Exception) -> JSONResponse:
         """Отдаёт 500 на любое непредусмотренное исключение, не раскрывая деталей."""
         logger.exception("Unhandled error on %s %s", request.method, request.url.path)
+        return _error_response(status.HTTP_500_INTERNAL_SERVER_ERROR, "Internal server error")
+
+    @app.exception_handler(UserNotFoundError)
+    async def handle_user_not_found(request: Request, exc: UserNotFoundError) -> JSONResponse:
+        """Отдаёт 500 — ситуация означает рассогласованность данных, а не ошибку клиента."""
         return _error_response(status.HTTP_500_INTERNAL_SERVER_ERROR, "Internal server error")

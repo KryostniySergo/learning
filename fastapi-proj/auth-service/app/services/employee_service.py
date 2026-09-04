@@ -10,6 +10,7 @@ from app.core.exceptions import (
     InviteInvalidStatusError,
     InviteNotFoundError,
     NotAuthorizedError,
+    UserNotFoundError,
 )
 from app.core.outbox import build_outbox_message
 from app.core.security import hash_password
@@ -34,7 +35,7 @@ class EmployeeService:
         Args:
             uow (UnitOfWork): единица работы, дающая доступ к репозиториям и транзакции.
         """
-        self.uow = uow
+        self.uow: UnitOfWork = uow
 
     async def create_employee(
         self,
@@ -67,13 +68,13 @@ class EmployeeService:
             logger.warning("create_employee denied for user %s", current_user.user_id)
             raise NotAuthorizedError
 
-        company_id = current_user.company_id
-        account = await self.uow.accounts.get_by_email(email)
+        company_id: UUID = current_user.company_id
+        account: Account | None = await self.uow.accounts.get_by_email(email)
 
         if account is None:
             return await self._create_new_employee(email, first_name, last_name, company_id)
 
-        secrets_obj = await self.uow.secrets.get_by_account_id(account.id)
+        secrets_obj: Secrets | None = await self.uow.secrets.get_by_account_id(account.id)
         if secrets_obj is not None:
             return await self._attach_existing_user(secrets_obj.user_id, company_id), None
 
@@ -96,7 +97,7 @@ class EmployeeService:
             InviteExpiredError: если срок действия инвайта истёк.
             InviteInvalidStatusError: если инвайт уже использован или отменён.
         """
-        invite = await self.uow.invites.get_by_token(invite_token)
+        invite: Invite | None = await self.uow.invites.get_by_token(invite_token)
         if invite is None or invite.user_id is None:
             logger.warning("register_employee: invite not found or has no user")
             raise InviteNotFoundError
@@ -169,7 +170,7 @@ class EmployeeService:
             )
         )
 
-        token = secrets_lib.token_urlsafe(32)
+        token: str = secrets_lib.token_urlsafe(32)
         self.uow.invites.add(
             Invite(
                 id=uuid4(),
@@ -212,7 +213,11 @@ class EmployeeService:
             )
         )
 
-        user = await self.uow.users.get_by_id(user_id)
+        user: User | None = await self.uow.users.get_by_id(user_id)
+        if user is None:
+            logger.error("user %s referenced by secrets but missing", user_id)
+            raise UserNotFoundError
+
         self._publish_employee_created(user, company_id)
         await self.uow.commit()
 
@@ -239,7 +244,7 @@ class EmployeeService:
         Raises:
             EmployeeAlreadyInCompanyError: если он уже состоит в этой компании.
         """
-        user_id = await self.uow.invites.get_user_id_by_account(account.id)
+        user_id: UUID | None = await self.uow.invites.get_user_id_by_account(account.id)
 
         if user_id is None:
             user = User(id=uuid4(), name=first_name, surname=last_name)
@@ -247,8 +252,12 @@ class EmployeeService:
             await self.uow.session.flush()
             user_id = user.id
         else:
-            user = await self.uow.users.get_by_id(user_id)
-            existing = await self.uow.members.get_by_user_and_company(user_id, company_id)
+            user: User | None = await self.uow.users.get_by_id(user_id)
+            if user is None:
+                logger.error("user %s referenced by invite but missing", user_id)
+                raise UserNotFoundError
+
+            existing: Member | None = await self.uow.members.get_by_user_and_company(user_id, company_id)
             if existing is not None:
                 raise EmployeeAlreadyInCompanyError
 
@@ -261,7 +270,7 @@ class EmployeeService:
             )
         )
 
-        token = secrets_lib.token_urlsafe(32)
+        token: str = secrets_lib.token_urlsafe(32)
         self.uow.invites.add(
             Invite(
                 id=uuid4(),

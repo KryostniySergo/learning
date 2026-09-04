@@ -36,3 +36,7 @@ class EmployeeAlreadyInCompanyError(Exception):
 
 class CompanyNotFoundError(Exception):
     """Исключение, если компания не найдена."""
+
+
+class UserNotFoundError(Exception):
+    """Исключение, если пользователь не найден при операции, где он должен существовать."""

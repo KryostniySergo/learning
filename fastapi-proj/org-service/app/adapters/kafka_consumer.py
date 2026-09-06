@@ -10,20 +10,19 @@ logger = logging.getLogger(__name__)
 class KafkaConsumerAdapter:
     """Тонкая обёртка над aiokafka.AIOKafkaConsumer.
 
-    Изолирует остальной код от деталей API aiokafka — сервисный слой работает
-    с уже распарсенными dict-envelope, а не с сырыми ConsumerRecord.
+    Поддерживает подписку на один или несколько топиков.
     """
 
-    def __init__(self, bootstrap_servers: str, topic: str, group_id: str) -> None:
+    def __init__(self, bootstrap_servers: str, topics: list[str], group_id: str) -> None:
         """Инициализирует адаптер.
 
         Args:
             bootstrap_servers (str): адрес(а) Kafka-брокера.
-            topic (str): топик, который нужно слушать.
-            group_id (str): имя consumer group для этого сервиса.
+            topics (list[str]): топики, на которые нужно подписаться.
+            group_id (str): имя consumer group.
         """
         self._consumer = AIOKafkaConsumer(
-            topic,
+            *topics,
             bootstrap_servers=bootstrap_servers,
             group_id=group_id,
             enable_auto_commit=False,
@@ -41,7 +40,7 @@ class KafkaConsumerAdapter:
         logger.info("KafkaConsumerAdapter stopped")
 
     async def consume(self) -> AsyncIterator[dict]:
-        """Асинхронно перебирает сообщения из топика, возвращая распарсенный envelope.
+        """Перебирает сообщения, возвращая распарсенный envelope.
 
         Yields:
             dict: envelope события, распарсенный из JSON.
@@ -50,5 +49,20 @@ class KafkaConsumerAdapter:
             yield json.loads(record.value.decode("utf-8"))
 
     async def commit(self) -> None:
-        """Коммитит offset текущей позиции чтения (вызывать после успешной обработки)."""
+        """Коммитит offset текущей позиции чтения."""
         await self._consumer.commit()
+
+    async def seek_to_committed(self) -> None:
+        """Возвращает позицию чтения к последнему закоммиченному offset.
+
+        Нужно для повторной обработки сообщения внутри того же процесса:
+        без этого aiokafka продолжит читать дальше, не возвращаясь назад,
+        и незакоммиченное сообщение будет повторно доставлено только
+        после перезапуска консьюмера.
+        """
+        for partition in self._consumer.assignment():
+            committed = await self._consumer.committed(partition)
+            if committed is not None:
+                self._consumer.seek(partition, committed)
+            else:
+                await self._consumer.seek_to_beginning(partition)

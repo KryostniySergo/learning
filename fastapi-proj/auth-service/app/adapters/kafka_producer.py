@@ -1,4 +1,5 @@
 import json
+from uuid import UUID
 
 from aiokafka import AIOKafkaProducer
 
@@ -22,22 +23,16 @@ class KafkaProducerAdapter:
         """Закрывает соединение с брокером. Вызывается при graceful shutdown."""
         await self._producer.stop()
 
-    async def send(self, topic: str, key: str, value: dict) -> None:
-        """Публикует сообщение в топик и ждёт подтверждения доставки (ack).
+    async def send(self, topic: str, key: UUID, value: dict) -> None:
+        """Публикует сообщение в топик, дожидаясь подтверждения от брокера.
 
         Args:
-            topic (str): имя топика Kafka.
-            key (str): ключ партиционирования (aggregate_id), гарантирует порядок
-                событий одной сущности внутри партиции.
-            value (dict): payload сообщения (envelope), будет сериализован в JSON.
-
-        Raises:
-            aiokafka.errors.KafkaError: при сбое отправки (потере соединения,
-                таймауте и т.п.) — вызывающий код (publisher) должен это поймать
-                и пометить сообщение как FAILED для повторной попытки.
+            topic (str): целевой топик.
+            key (UUID): ключ партиционирования — aggregate_id события.
+            value (dict): envelope события.
         """
         await self._producer.send_and_wait(
             topic,
-            key=key.encode("utf-8"),
+            key=str(key).encode("utf-8"),
             value=json.dumps(value).encode("utf-8"),
         )

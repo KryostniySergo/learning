@@ -23,7 +23,11 @@ class InboxConsumer:
         self._running = False
 
     async def run_forever(self) -> None:
-        """Бесконечно читает и обрабатывает события, коммитя offset после каждого успеха."""
+        """Бесконечно читает и обрабатывает события, коммитя offset после каждого успеха.
+
+        При ошибке обработки возвращает позицию чтения к последнему закоммиченному
+        offset, чтобы сообщение было передоставлено в рамках текущей сессии.
+        """
         self._running = True
         async for envelope in self._consumer.consume():
             if not self._running:
@@ -34,7 +38,9 @@ class InboxConsumer:
                     service = InboxService(uow)
                     await service.handle_event(envelope)
             except Exception:
-                logger.exception("InboxConsumer: failed to process envelope, will retry on redelivery")
+                logger.exception("InboxConsumer: failed to process envelope, will retry")
+                await self._consumer.seek_to_committed()
+                await asyncio.sleep(2)
                 continue
 
             await self._consumer.commit()
@@ -48,7 +54,7 @@ async def main() -> None:
     """Точка входа процесса Inbox-консьюмера."""
     consumer = KafkaConsumerAdapter(
         bootstrap_servers=settings.kafka_bootstrap_servers,
-        topic=settings.kafka_consumer_topic,
+        topics=[settings.kafka_consumer_topic],
         group_id=settings.kafka_consumer_group,
     )
     await consumer.start()

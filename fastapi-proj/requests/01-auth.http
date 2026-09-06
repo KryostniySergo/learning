@@ -1,0 +1,118 @@
+###############################################################################
+# auth-service — регистрация, аутентификация, сотрудники
+###############################################################################
+
+@authUrl = http://localhost:8000
+@email = user@example.com
+@password = userpass123
+
+### Проверка свободной почты
+GET {{authUrl}}/auth/api/v1/check_account/{{email}}
+
+### Повторная проверка занятой почты — available: false
+GET {{authUrl}}/auth/api/v1/check_account/{{email}}
+
+### Невалидный адрес — ожидается 422
+GET {{authUrl}}/auth/api/v1/check_account/not-an-email
+
+### Подтверждение почты
+@inviteToken = PASTE_TOKEN_FROM_MAILHOG
+
+POST {{authUrl}}/auth/api/v1/sign-up/
+Content-Type: application/json
+
+{
+  "account": "{{email}}",
+  "invite_token": "{{inviteToken}}"
+}
+
+### Повторное подтверждение того же инвайта — ожидается 409
+POST {{authUrl}}/auth/api/v1/sign-up/
+Content-Type: application/json
+
+{
+  "account": "{{email}}",
+  "invite_token": "{{inviteToken}}"
+}
+
+### Подтверждение несуществующим токеном — ожидается 404
+POST {{authUrl}}/auth/api/v1/sign-up/
+Content-Type: application/json
+
+{
+  "account": "{{email}}",
+  "invite_token": "definitely-not-a-real-token"
+}
+
+### Завершение регистрации компании
+POST {{authUrl}}/auth/api/v1/sign-up-complete/
+Content-Type: application/json
+
+{
+  "account": "{{email}}",
+  "pass": "{{password}}",
+  "first_name": "Иван",
+  "last_name": "Иванов",
+  "company_name": "ООО Пример"
+}
+
+### Логин
+# @name login
+POST {{authUrl}}/auth/api/v1/login/
+Content-Type: application/json
+
+{
+  "account": "{{email}}",
+  "pass": "{{password}}"
+}
+
+@token = {{login.response.body.access_token}}
+
+### Логин с неверным паролем — ожидается 401
+POST {{authUrl}}/auth/api/v1/login/
+Content-Type: application/json
+
+{
+  "account": "{{email}}",
+  "pass": "wrong-password"
+}
+
+### Логин с явным выбором компании
+POST {{authUrl}}/auth/api/v1/login/
+Content-Type: application/json
+
+{
+  "account": "{{email}}",
+  "pass": "{{password}}",
+  "company_id": "PASTE_COMPANY_ID"
+}
+
+### Создание сотрудника без указания подразделения
+POST {{authUrl}}/auth/api/v1/employees/
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "account": "simple@example.com",
+  "first_name": "Простой",
+  "last_name": "Сотрудник"
+}
+
+### Создание сотрудника без токена — ожидается 401
+POST {{authUrl}}/auth/api/v1/employees/
+Content-Type: application/json
+
+{
+  "account": "anon@example.com",
+  "first_name": "Аноним",
+  "last_name": "Безтокенов"
+}
+
+### Завершение регистрации сотрудника
+POST {{authUrl}}/auth/api/v1/employees/register/
+Content-Type: application/json
+
+{
+  "invite_token": "PASTE_TOKEN_FROM_MAILHOG",
+  "pass": "employeepass123"
+}

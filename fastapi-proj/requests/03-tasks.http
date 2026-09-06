@@ -1,0 +1,109 @@
+###############################################################################
+# tasks-service — задачи
+#
+# Требуется токен из auth-service. Участники задачи должны существовать
+# в реплике tasks-service (то есть события employee.created обработаны).
+###############################################################################
+
+@tasksUrl = http://localhost:8003
+@token = PASTE_TOKEN
+@userId = PASTE_USER_ID
+@otherUserId = PASTE_OTHER_USER_ID
+
+### Список задач компании
+GET {{tasksUrl}}/tasks/api/v1/tasks/
+Authorization: Bearer {{token}}
+
+### Без токена — ожидается 401
+GET {{tasksUrl}}/tasks/api/v1/tasks/
+
+### Фильтр по статусу
+GET {{tasksUrl}}/tasks/api/v1/tasks/?status=new&limit=10&offset=0
+Authorization: Bearer {{token}}
+
+### Создание задачи
+# @name createTask
+POST {{tasksUrl}}/tasks/api/v1/tasks/
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "title": "Подготовить отчёт за квартал",
+  "description": "Собрать данные по продажам и оформить презентацию",
+  "responsible_id": "{{otherUserId}}",
+  "watcher_ids": ["{{userId}}"],
+  "assignee_ids": ["{{otherUserId}}"],
+  "deadline": "2026-12-31T18:00:00",
+  "estimate_minutes": 240
+}
+
+@taskId = {{createTask.response.body.id}}
+
+### Создание задачи с несуществующим участником — ожидается 404
+POST {{tasksUrl}}/tasks/api/v1/tasks/
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "title": "Задача в никуда",
+  "responsible_id": "00000000-0000-0000-0000-000000000000"
+}
+
+### Задача с наблюдателями и исполнителями
+GET {{tasksUrl}}/tasks/api/v1/tasks/{{taskId}}
+Authorization: Bearer {{token}}
+
+### Изменение полей задачи
+PATCH {{tasksUrl}}/tasks/api/v1/tasks/{{taskId}}
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "title": "Подготовить отчёт за квартал (уточнено)",
+  "estimate_minutes": 300
+}
+
+### Смена статуса: new -> in_progress
+# Публикует событие task.status_changed
+PUT {{tasksUrl}}/tasks/api/v1/tasks/{{taskId}}/status
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "status": "in_progress"
+}
+
+### Возврат статуса назад — ожидается 409
+PUT {{tasksUrl}}/tasks/api/v1/tasks/{{taskId}}/status
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "status": "new"
+}
+
+### Смена статуса: in_progress -> done
+PUT {{tasksUrl}}/tasks/api/v1/tasks/{{taskId}}/status
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "status": "done"
+}
+
+### Переход из терминального статуса — ожидается 409
+PUT {{tasksUrl}}/tasks/api/v1/tasks/{{taskId}}/status
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "status": "in_progress"
+}
+
+### Удаление задачи
+DELETE {{tasksUrl}}/tasks/api/v1/tasks/{{taskId}}
+Authorization: Bearer {{token}}
+
+### Чтение удалённой задачи — ожидается 404
+GET {{tasksUrl}}/tasks/api/v1/tasks/{{taskId}}
+Authorization: Bearer {{token}}

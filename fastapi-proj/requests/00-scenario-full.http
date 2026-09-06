@@ -1,0 +1,162 @@
+###############################################################################
+# Сквозной сценарий: регистрация компании, оргструктура, сотрудник, сага
+#
+# Выполнять запросы по порядку сверху вниз.
+# Значения из ответов подставляются в переменные вручную — они отмечены
+# комментарием "@=" и требуют правки после соответствующего шага.
+#
+# Токены инвайтов приходят в MailHog: http://localhost:8025
+###############################################################################
+
+@authUrl = http://localhost:8000
+@orgUrl = http://localhost:8002
+@tasksUrl = http://localhost:8003
+
+@adminEmail = founder@example.com
+@adminPass = founderpass123
+@employeeEmail = worker@example.com
+@employeePass = workerpass123
+
+### 1. Проверка почты администратора — код придёт в MailHog
+GET {{authUrl}}/auth/api/v1/check_account/{{adminEmail}}
+
+### 2. Подтверждение почты
+# @= вставить токен из письма в MailHog
+@adminInviteToken = PASTE_TOKEN_FROM_MAILHOG
+
+POST {{authUrl}}/auth/api/v1/sign-up/
+Content-Type: application/json
+
+{
+  "account": "{{adminEmail}}",
+  "invite_token": "{{adminInviteToken}}"
+}
+
+### 3. Завершение регистрации: компания и администратор
+POST {{authUrl}}/auth/api/v1/sign-up-complete/
+Content-Type: application/json
+
+{
+  "account": "{{adminEmail}}",
+  "pass": "{{adminPass}}",
+  "first_name": "Иван",
+  "last_name": "Основатель",
+  "company_name": "ООО Ромашка"
+}
+
+### 4. Логин администратора
+# @name adminLogin
+POST {{authUrl}}/auth/api/v1/login/
+Content-Type: application/json
+
+{
+  "account": "{{adminEmail}}",
+  "pass": "{{adminPass}}"
+}
+
+### Токен администратора берётся из предыдущего ответа
+@adminToken = {{adminLogin.response.body.access_token}}
+
+### 5. Создание корневого подразделения
+# @name createRoot
+POST {{orgUrl}}/org/api/v1/struct-adm/root
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{
+  "name": "Головной офис"
+}
+
+@rootId = {{createRoot.response.body.id}}
+
+### 6. Создание дочернего подразделения
+# @name createChild
+POST {{orgUrl}}/org/api/v1/struct-adm/child
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{
+  "parent_id": "{{rootId}}",
+  "name": "Разработка"
+}
+
+@childId = {{createChild.response.body.id}}
+
+### 7. Создание должности
+# @name createPosition
+POST {{orgUrl}}/org/api/v1/positions/
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{
+  "title": "Backend-разработчик"
+}
+
+@positionId = {{createPosition.response.body.id}}
+
+### 8. Привязка должности к подразделению
+POST {{orgUrl}}/org/api/v1/positions/struct-adm/{{childId}}
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{
+  "position_id": "{{positionId}}"
+}
+
+### 9. Создание сотрудника с указанием места в оргструктуре
+# Запускает цепочку: employee.created -> реплики в org/tasks
+# @name createEmployee
+POST {{authUrl}}/auth/api/v1/employees/
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{
+  "account": "{{employeeEmail}}",
+  "first_name": "Пётр",
+  "last_name": "Работников",
+  "struct_adm_id": "{{childId}}",
+  "position_id": "{{positionId}}"
+}
+
+@employeeId = {{createEmployee.response.body.employee_id}}
+
+### 10. Завершение регистрации сотрудника — СТАРТ САГИ ОНБОРДИНГА
+# @= вставить токен из письма в MailHog
+@employeeInviteToken = PASTE_TOKEN_FROM_MAILHOG
+
+POST {{authUrl}}/auth/api/v1/employees/register/
+Content-Type: application/json
+
+{
+  "invite_token": "{{employeeInviteToken}}",
+  "pass": "{{employeePass}}"
+}
+
+### 11. Проверка результата саги: сотрудник назначен на должность
+GET {{orgUrl}}/org/api/v1/positions/users/{{employeeId}}
+Authorization: Bearer {{adminToken}}
+
+### 12. Проверка результата саги: создана приветственная задача
+GET {{tasksUrl}}/tasks/api/v1/tasks/
+Authorization: Bearer {{adminToken}}
+
+### 13. Логин сотрудника — в токене будет role: user
+# @name employeeLogin
+POST {{authUrl}}/auth/api/v1/login/
+Content-Type: application/json
+
+{
+  "account": "{{employeeEmail}}",
+  "pass": "{{employeePass}}"
+}
+
+@employeeToken = {{employeeLogin.response.body.access_token}}
+
+### 14. Сотрудник не может менять оргструктуру — ожидается 403
+POST {{orgUrl}}/org/api/v1/struct-adm/root
+Content-Type: application/json
+Authorization: Bearer {{employeeToken}}
+
+{
+  "name": "Попытка обычного сотрудника"
+}

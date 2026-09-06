@@ -1,0 +1,161 @@
+###############################################################################
+# org-service — оргструктура и должности
+#
+# Требуется токен администратора из auth-service.
+###############################################################################
+
+@orgUrl = http://localhost:8002
+@token = PASTE_ADMIN_TOKEN
+
+### Всё дерево компании
+GET {{orgUrl}}/org/api/v1/struct-adm/
+Authorization: Bearer {{token}}
+
+### Без токена — ожидается 401
+GET {{orgUrl}}/org/api/v1/struct-adm/
+
+### Создание корневого подразделения
+# @name createRoot
+POST {{orgUrl}}/org/api/v1/struct-adm/root
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "name": "Головной офис"
+}
+
+@rootId = {{createRoot.response.body.id}}
+
+### Создание дочернего подразделения
+# @name createChild
+POST {{orgUrl}}/org/api/v1/struct-adm/child
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "parent_id": "{{rootId}}",
+  "name": "Разработка"
+}
+
+@childId = {{createChild.response.body.id}}
+
+### Создание внука — проверка наращивания ltree-пути
+POST {{orgUrl}}/org/api/v1/struct-adm/child
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "parent_id": "{{childId}}",
+  "name": "Backend"
+}
+
+### Поддерево узла — сам узел в выдачу не входит
+GET {{orgUrl}}/org/api/v1/struct-adm/{{childId}}/subtree
+Authorization: Bearer {{token}}
+
+### Переименование подразделения
+PATCH {{orgUrl}}/org/api/v1/struct-adm/{{childId}}
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "name": "Отдел разработки"
+}
+
+### Назначение руководителя
+PUT {{orgUrl}}/org/api/v1/struct-adm/{{childId}}/manager
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "manager_id": "PASTE_USER_ID"
+}
+
+### Несуществующее подразделение — ожидается 404
+GET {{orgUrl}}/org/api/v1/struct-adm/00000000-0000-0000-0000-000000000000/subtree
+Authorization: Bearer {{token}}
+
+### Каскадное удаление узла с поддеревом
+DELETE {{orgUrl}}/org/api/v1/struct-adm/{{childId}}
+Authorization: Bearer {{token}}
+
+###############################################################################
+# Должности
+###############################################################################
+
+### Создание должности
+# @name createPosition
+POST {{orgUrl}}/org/api/v1/positions/
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "title": "Backend-разработчик"
+}
+
+@positionId = {{createPosition.response.body.id}}
+
+### Список должностей компании
+GET {{orgUrl}}/org/api/v1/positions/
+Authorization: Bearer {{token}}
+
+### Переименование должности
+PATCH {{orgUrl}}/org/api/v1/positions/{{positionId}}
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "title": "Senior Backend-разработчик"
+}
+
+### Привязка должности к подразделению
+POST {{orgUrl}}/org/api/v1/positions/struct-adm/{{rootId}}
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "position_id": "{{positionId}}"
+}
+
+### Повторная привязка — ожидается 409
+POST {{orgUrl}}/org/api/v1/positions/struct-adm/{{rootId}}
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "position_id": "{{positionId}}"
+}
+
+### Должности подразделения
+GET {{orgUrl}}/org/api/v1/positions/struct-adm/{{rootId}}
+Authorization: Bearer {{token}}
+
+### Назначение сотрудника на должность
+POST {{orgUrl}}/org/api/v1/positions/{{positionId}}/users
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "user_id": "PASTE_USER_ID"
+}
+
+### Назначение несуществующего сотрудника — ожидается 404
+POST {{orgUrl}}/org/api/v1/positions/{{positionId}}/users
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "user_id": "00000000-0000-0000-0000-000000000000"
+}
+
+### Должности сотрудника
+GET {{orgUrl}}/org/api/v1/positions/users/PASTE_USER_ID
+Authorization: Bearer {{token}}
+
+### Снятие сотрудника с должности
+DELETE {{orgUrl}}/org/api/v1/positions/{{positionId}}/users/PASTE_USER_ID
+Authorization: Bearer {{token}}
+
+### Удаление должности со всеми привязками
+DELETE {{orgUrl}}/org/api/v1/positions/{{positionId}}
+Authorization: Bearer {{token}}

@@ -11,6 +11,10 @@ class Settings(BaseSettings):
     kafka_bootstrap_servers: str = "localhost:9092"
     kafka_topic: str = "auth-events"
 
+    # Saga settings
+    kafka_saga_commands_topic: str = "saga-commands"
+    kafka_saga_replies_topic: str = "saga-replies"
+
     # JWT settings
     jwt_secret: str = "change-me-in-production"
     jwt_algorithm: str = "HS256"

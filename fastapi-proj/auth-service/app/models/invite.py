@@ -3,7 +3,7 @@ from enum import Enum
 from uuid import UUID as PyUUID
 from uuid import uuid4
 
-from sqlalchemy import TIMESTAMP, ForeignKey, String
+from sqlalchemy import TIMESTAMP, UUID, ForeignKey, String
 from sqlalchemy import Enum as SqlEnum
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -34,3 +34,6 @@ class Invite(Base, TimestampMixin):
 
     user_id: Mapped[PyUUID | None] = mapped_column(ForeignKey("user.id"), nullable=True)
     account_id: Mapped[PyUUID] = mapped_column(ForeignKey("account.id"), nullable=False)
+
+    struct_adm_id: Mapped[PyUUID | None] = mapped_column(UUID, nullable=True)
+    position_id: Mapped[PyUUID | None] = mapped_column(UUID, nullable=True)

@@ -1,6 +1,6 @@
 from sqlalchemy import select
 
-from app.models.outbox_message import OutboxMessage, OutMessageStatus
+from app.models.outbox_message import OutboxMessage, OutboxMessageStatus
 from app.repositories.base import BaseRepository
 
 
@@ -19,7 +19,7 @@ class OutboxRepository(BaseRepository[OutboxMessage]):
         """
         stmt = (
             select(OutboxMessage)
-            .where(OutboxMessage.status == OutMessageStatus.CREATED)
+            .where(OutboxMessage.status == OutboxMessageStatus.CREATED)
             .order_by(OutboxMessage.occurred_at)
             .limit(limit)
         )

@@ -11,7 +11,7 @@ from sqlalchemy.orm import Mapped, mapped_column
 from app.models.base import Base
 
 
-class OutMessageStatus(str, Enum):
+class OutboxMessageStatus(str, Enum):
     CREATED = "created"
     SENT = "sent"
     FAILED = "failed"
@@ -23,9 +23,13 @@ class OutboxMessage(Base):
     event_type: Mapped[str] = mapped_column(String(100))
     aggregate_id: Mapped[PyUUID] = mapped_column(UUID)
 
+    topic: Mapped[str] = mapped_column(String(100))
+
     occurred_at: Mapped[datetime] = mapped_column(TIMESTAMP, default=datetime.now)
 
     payload: Mapped[dict] = mapped_column(JSONB)
 
-    status: Mapped[OutMessageStatus] = mapped_column(SqlEnum(OutMessageStatus), default=OutMessageStatus.CREATED)
+    status: Mapped[OutboxMessageStatus] = mapped_column(
+        SqlEnum(OutboxMessageStatus), default=OutboxMessageStatus.CREATED
+    )
     retry_count: Mapped[int] = mapped_column(INT, default=0)

@@ -6,6 +6,7 @@ from app.models.inbox_message import InboxMessage
 from app.models.invite import Invite
 from app.models.member import Member, Role
 from app.models.outbox_message import OutboxMessage
+from app.models.saga_instance import SagaInstance
 from app.models.secrets import Secrets
 from app.models.user import User
 
@@ -18,6 +19,7 @@ __all__ = [
     "Member",
     "OutboxMessage",
     "Role",
+    "SagaInstance",
     "Secrets",
     "User",
 ]

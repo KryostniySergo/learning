@@ -2,8 +2,7 @@ import asyncio
 import logging
 
 from app.adapters.kafka_producer import KafkaProducerAdapter
-from app.core.config import settings
-from app.models.outbox_message import OutMessageStatus
+from app.models.outbox_message import OutboxMessageStatus
 from app.uow import UnitOfWork
 
 logger = logging.getLogger(__name__)
@@ -49,14 +48,14 @@ class OutboxPublisher:
         for message in messages:
             async with UnitOfWork() as uow:
                 db_message = await uow.outbox.get_by_id(message.id)
-                if db_message is None or db_message.status != OutMessageStatus.CREATED:
+                if db_message is None or db_message.status != OutboxMessageStatus.CREATED:
                     continue
 
                 try:
                     await self._producer.send(
-                        topic=settings.kafka_topic,
-                        key=str(db_message.aggregate_id),
-                        value=db_message.payload,
+                        topic=message.topic,
+                        key=message.aggregate_id,
+                        value=message.payload,
                     )
                 except Exception:
                     logger.exception(
@@ -64,10 +63,10 @@ class OutboxPublisher:
                         db_message.id,
                         db_message.event_type,
                     )
-                    db_message.status = OutMessageStatus.FAILED
+                    db_message.status = OutboxMessageStatus.FAILED
                     db_message.retry_count += 1
                 else:
-                    db_message.status = OutMessageStatus.SENT
+                    db_message.status = OutboxMessageStatus.SENT
                     logger.info(
                         "Published outbox message %s (event_type=%s)",
                         db_message.id,

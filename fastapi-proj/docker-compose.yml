@@ -1,4 +1,35 @@
+x-auth-env: &auth-env
+  DB_HOST: auth-db
+  DB_PORT: 5432
+  DB_NAME: ${AUTH_DB_NAME:-auth_db}
+  DB_USER: ${AUTH_DB_USER:-postgres}
+  DB_PASS: ${AUTH_DB_PASS:-12345}
+  KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+  JWT_SECRET: ${JWT_SECRET:-super-secret-key-for-learning-project-only}
+  SMTP_HOST: mailhog
+  SMTP_PORT: 1025
+
+x-org-env: &org-env
+  DB_HOST: org-db
+  DB_PORT: 5432
+  DB_NAME: ${ORG_DB_NAME:-org_db}
+  DB_USER: ${ORG_DB_USER:-postgres}
+  DB_PASS: ${ORG_DB_PASS:-12345}
+  KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+  JWT_SECRET: ${JWT_SECRET:-super-secret-key-for-learning-project-only}
+
+x-tasks-env: &tasks-env
+  DB_HOST: tasks-db
+  DB_PORT: 5432
+  DB_NAME: ${TASKS_DB_NAME:-task_db}
+  DB_USER: ${TASKS_DB_USER:-postgres}
+  DB_PASS: ${TASKS_DB_PASS:-12345}
+  KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+  JWT_SECRET: ${JWT_SECRET:-super-secret-key-for-learning-project-only}
+
 services:
+  # ---------- инфраструктура ----------
+
   auth-db:
     image: postgres:16
     container_name: auth-db
@@ -12,7 +43,7 @@ services:
       test: ["CMD-SHELL", "pg_isready -U ${AUTH_DB_USER:-postgres}"]
       interval: 5s
       timeout: 5s
-      retries: 5
+      retries: 10
 
   org-db:
     image: postgres:16
@@ -27,7 +58,7 @@ services:
       test: ["CMD-SHELL", "pg_isready -U ${ORG_DB_USER:-postgres}"]
       interval: 5s
       timeout: 5s
-      retries: 5
+      retries: 10
 
   tasks-db:
     image: postgres:16
@@ -42,7 +73,7 @@ services:
       test: ["CMD-SHELL", "pg_isready -U ${TASKS_DB_USER:-postgres}"]
       interval: 5s
       timeout: 5s
-      retries: 5
+      retries: 10
 
   kafka:
     image: apache/kafka:3.8.0
@@ -65,4 +96,174 @@ services:
       test: ["CMD-SHELL", "/opt/kafka/bin/kafka-broker-api-versions.sh --bootstrap-server localhost:9092"]
       interval: 10s
       timeout: 10s
-      retries: 5
+      retries: 10
+
+  mailhog:
+    image: mailhog/mailhog
+    container_name: mailhog
+    ports:
+      - "1025:1025"
+      - "8025:8025"
+
+  # ---------- auth-service ----------
+
+  auth-migrate:
+    build: ./auth-service
+    container_name: auth-migrate
+    environment: *auth-env
+    command: alembic upgrade head
+    depends_on:
+      auth-db:
+        condition: service_healthy
+    restart: "no"
+
+  auth-api:
+    build: ./auth-service
+    container_name: auth-api
+    environment: *auth-env
+    ports:
+      - "8000:8000"
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000
+    depends_on:
+      auth-migrate:
+        condition: service_completed_successfully
+      kafka:
+        condition: service_healthy
+
+  auth-outbox:
+    build: ./auth-service
+    container_name: auth-outbox
+    environment: *auth-env
+    command: python -m app.outbox.run_publisher
+    depends_on:
+      auth-migrate:
+        condition: service_completed_successfully
+      kafka:
+        condition: service_healthy
+
+  auth-saga:
+    build: ./auth-service
+    container_name: auth-saga
+    environment: *auth-env
+    command: python -m app.saga.run_saga
+    depends_on:
+      auth-migrate:
+        condition: service_completed_successfully
+      kafka:
+        condition: service_healthy
+
+  # ---------- org-service ----------
+
+  org-migrate:
+    build: ./org-service
+    container_name: org-migrate
+    environment: *org-env
+    command: alembic upgrade head
+    depends_on:
+      org-db:
+        condition: service_healthy
+    restart: "no"
+
+  org-api:
+    build: ./org-service
+    container_name: org-api
+    environment: *org-env
+    ports:
+      - "8002:8000"
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000
+    depends_on:
+      org-migrate:
+        condition: service_completed_successfully
+      kafka:
+        condition: service_healthy
+
+  org-inbox:
+    build: ./org-service
+    container_name: org-inbox
+    environment: *org-env
+    command: python -m app.inbox.run_consumer
+    depends_on:
+      org-migrate:
+        condition: service_completed_successfully
+      kafka:
+        condition: service_healthy
+
+  org-outbox:
+    build: ./org-service
+    container_name: org-outbox
+    environment: *org-env
+    command: python -m app.outbox.run_publisher
+    depends_on:
+      org-migrate:
+        condition: service_completed_successfully
+      kafka:
+        condition: service_healthy
+
+  org-saga:
+    build: ./org-service
+    container_name: org-saga
+    environment: *org-env
+    command: python -m app.saga.run_saga_consumer
+    depends_on:
+      org-migrate:
+        condition: service_completed_successfully
+      kafka:
+        condition: service_healthy
+
+  # ---------- tasks-service ----------
+
+  tasks-migrate:
+    build: ./tasks-service
+    container_name: tasks-migrate
+    environment: *tasks-env
+    command: alembic upgrade head
+    depends_on:
+      tasks-db:
+        condition: service_healthy
+    restart: "no"
+
+  tasks-api:
+    build: ./tasks-service
+    container_name: tasks-api
+    environment: *tasks-env
+    ports:
+      - "8003:8000"
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000
+    depends_on:
+      tasks-migrate:
+        condition: service_completed_successfully
+      kafka:
+        condition: service_healthy
+
+  tasks-inbox:
+    build: ./tasks-service
+    container_name: tasks-inbox
+    environment: *tasks-env
+    command: python -m app.inbox.run_consumer
+    depends_on:
+      tasks-migrate:
+        condition: service_completed_successfully
+      kafka:
+        condition: service_healthy
+
+  tasks-outbox:
+    build: ./tasks-service
+    container_name: tasks-outbox
+    environment: *tasks-env
+    command: python -m app.outbox.run_publisher
+    depends_on:
+      tasks-migrate:
+        condition: service_completed_successfully
+      kafka:
+        condition: service_healthy
+
+  tasks-saga:
+    build: ./tasks-service
+    container_name: tasks-saga
+    environment: *tasks-env
+    command: python -m app.saga.run_saga_consumer
+    depends_on:
+      tasks-migrate:
+        condition: service_completed_successfully
+      kafka:
+        condition: service_healthy

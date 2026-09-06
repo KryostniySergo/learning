@@ -27,6 +27,12 @@ class Settings(BaseSettings):
     db_pass: str = "12345"
     db_host: str = "localhost"
 
+    # SMTP settings
+    smtp_host: str = "localhost"
+    smtp_port: int = 1025
+    smtp_from: str = "noreply@company-system.local"
+    app_base_url: str = "http://localhost:8000"
+
     @property
     def database_url(self) -> str:
         """database_url Возвращает connection string

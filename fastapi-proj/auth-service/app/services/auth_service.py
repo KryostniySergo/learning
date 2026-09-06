@@ -24,6 +24,7 @@ from app.models.member import Member
 from app.models.member import Role as MemberRole
 from app.models.secrets import Secrets
 from app.models.user import User
+from app.services.mail_service import MailService
 from app.uow import UnitOfWork
 
 logger = logging.getLogger(__name__)
@@ -79,8 +80,7 @@ class AuthService:
             raise AccountAlreadyExistsError from exc
 
         logger.info("check_account: invite created for %s (account_id=%s)", email, account.id)
-        # "отправка" кода — для учебного проекта просто логируем на отдельном уровне
-        logger.debug("[MAIL MOCK] Invite token for %s: %s", email, invite.token)
+        await MailService().send_company_invite(email, invite.token)
 
         return True
 

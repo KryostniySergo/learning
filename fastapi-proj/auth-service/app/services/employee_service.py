@@ -21,6 +21,7 @@ from app.models.member import Role as MemberRole
 from app.models.secrets import Secrets
 from app.models.user import User
 from app.schemas.current_user import CurrentUser
+from app.services.mail_service import MailService
 from app.uow import UnitOfWork
 
 logger = logging.getLogger(__name__)
@@ -203,7 +204,7 @@ class EmployeeService:
         await self.uow.commit()
 
         logger.info("employee created: %s (%s) in company %s", user.id, email, company_id)
-        logger.debug("[MAIL MOCK] Invite token for %s: %s", email, token)
+        await MailService().send_employee_invite(email, token)
         return user.id, token
 
     async def _attach_existing_user(self, user_id: UUID, company_id: UUID) -> UUID:
@@ -318,7 +319,7 @@ class EmployeeService:
             user_id,
             company_id,
         )
-        logger.debug("[MAIL MOCK] Invite token for %s: %s", account.email, token)
+        await MailService().send_employee_invite(account.email, token)
         return user_id, token
 
     def _publish_employee_created(self, user: User, company_id: UUID) -> None:

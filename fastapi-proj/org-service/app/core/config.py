@@ -10,18 +10,23 @@ class Settings(BaseSettings):
     # Inbox settings
     consumer_name: str = "org-service"
 
+    # Saga settings
+    kafka_saga_commands_topic: str = "saga-commands"
+    kafka_saga_replies_topic: str = "saga-replies"
+
     # JWT settings
     jwt_secret: str = "change-me-in-production"
     jwt_algorithm: str = "HS256"
 
     # Kafka settings
     kafka_bootstrap_servers: str = "localhost:9092"
+    kafka_topic: str = "org-events"
     kafka_consumer_topic: str = "auth-events"
     kafka_consumer_group: str = "org-service"
 
     # DB settings
     db_name: str = "org_db"
-    db_port: int = 5432
+    db_port: int = 5433
     db_user: str = "postgres"
     db_pass: str = "12345"
     db_host: str = "localhost"

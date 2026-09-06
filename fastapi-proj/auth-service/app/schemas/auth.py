@@ -54,6 +54,8 @@ class CreateEmployeeRequest(BaseModel):
     account: EmailStr
     first_name: str
     last_name: str
+    struct_adm_id: UUID | None = None
+    position_id: UUID | None = None
 
 
 class CreateEmployeeResponse(BaseModel):

@@ -10,6 +10,10 @@ class Settings(BaseSettings):
     # Inbox settings
     consumer_name: str = "tasks-service"
 
+    # Saga settings
+    kafka_saga_commands_topic: str = "saga-commands"
+    kafka_saga_replies_topic: str = "saga-replies"
+
     # Kafka settings
     kafka_bootstrap_servers: str = "localhost:9092"
     kafka_topic: str = "tasks-events"

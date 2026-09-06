@@ -27,6 +27,8 @@ class OutboxMessage(Base):
     event_type: Mapped[str] = mapped_column(String(100))
     aggregate_id: Mapped[PyUUID] = mapped_column(UUID)
 
+    topic: Mapped[str] = mapped_column(String(100))
+
     occurred_at: Mapped[datetime] = mapped_column(TIMESTAMP, default=datetime.now)
     payload: Mapped[dict] = mapped_column(JSONB)
 

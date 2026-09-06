@@ -2,7 +2,6 @@ import asyncio
 import logging
 
 from app.adapters.kafka_producer import KafkaProducerAdapter
-from app.core.config import settings
 from app.models.outbox_message import OutboxMessageStatus
 from app.uow import UnitOfWork
 
@@ -59,7 +58,7 @@ class OutboxPublisher:
 
             try:
                 await self._producer.send(
-                    topic=settings.kafka_topic,
+                    topic=message.topic,
                     key=message.aggregate_id,
                     value=message.payload,
                 )
@@ -72,6 +71,4 @@ class OutboxPublisher:
 
             message.status = OutboxMessageStatus.SENT
             await uow.commit()
-            logger.info(
-                "Published outbox message %s (event_type=%s)", message_id, message.event_type
-            )
+            logger.info("Published outbox message %s (event_type=%s)", message_id, message.event_type)

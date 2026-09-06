@@ -10,6 +10,7 @@ from app.repositories.company_repository import CompanyRepository
 from app.repositories.invite_repository import InviteRepository
 from app.repositories.member_repository import MemberRepository
 from app.repositories.outbox_repository import OutboxRepository
+from app.repositories.saga_instance_repository import SagaInstanceRepository
 from app.repositories.secrets_repository import SecretsRepository
 from app.repositories.user_repository import UserRepository
 
@@ -40,6 +41,7 @@ class UnitOfWork:
         self.invites = InviteRepository(self.session)
         self.secrets = SecretsRepository(self.session)
         self.outbox = OutboxRepository(self.session)
+        self.saga = SagaInstanceRepository(self.session)
 
         return self
 

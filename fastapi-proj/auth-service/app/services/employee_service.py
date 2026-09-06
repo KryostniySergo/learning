@@ -43,6 +43,8 @@ class EmployeeService:
         first_name: str,
         last_name: str,
         current_user: CurrentUser,
+        struct_adm_id: UUID | None = None,
+        position_id: UUID | None = None,
     ) -> tuple[UUID, str | None]:
         """Создаёт сотрудника в компании администратора и генерирует инвайт.
 
@@ -55,6 +57,8 @@ class EmployeeService:
             first_name (str): имя сотрудника.
             last_name (str): фамилия сотрудника.
             current_user (CurrentUser): контекст администратора.
+            struct_adm_id (UUID | None): подразделение, в которое определяется сотрудник.
+            position_id (UUID | None): должность сотрудника в этом подразделении.
 
         Returns:
             tuple[UUID, str | None]: id сотрудника и токен инвайта. Токен равен None,
@@ -72,13 +76,15 @@ class EmployeeService:
         account: Account | None = await self.uow.accounts.get_by_email(email)
 
         if account is None:
-            return await self._create_new_employee(email, first_name, last_name, company_id)
+            return await self._create_new_employee(email, first_name, last_name, company_id, struct_adm_id, position_id)
 
-        secrets_obj: Secrets | None = await self.uow.secrets.get_by_account_id(account.id)
+        secrets_obj = await self.uow.secrets.get_by_account_id(account.id)
         if secrets_obj is not None:
             return await self._attach_existing_user(secrets_obj.user_id, company_id), None
 
-        return await self._reinvite_pending_account(account, first_name, last_name, company_id)
+        return await self._reinvite_pending_account(
+            account, first_name, last_name, company_id, struct_adm_id, position_id
+        )
 
     async def register_employee(self, invite_token: str, password: str) -> UUID:
         """Завершает регистрацию сотрудника по инвайту, задавая пароль.
@@ -132,6 +138,8 @@ class EmployeeService:
                     "employee_id": str(invite.user_id),
                     "company_id": str(member.company_id) if member else None,
                     "invite_id": str(invite.id),
+                    "struct_adm_id": str(invite.struct_adm_id) if invite.struct_adm_id else None,
+                    "position_id": str(invite.position_id) if invite.position_id else None,
                 },
             )
         )
@@ -141,7 +149,13 @@ class EmployeeService:
         return invite.user_id
 
     async def _create_new_employee(
-        self, email: str, first_name: str, last_name: str, company_id: UUID
+        self,
+        email: str,
+        first_name: str,
+        last_name: str,
+        company_id: UUID,
+        struct_adm_id: UUID | None = None,
+        position_id: UUID | None = None,
     ) -> tuple[UUID, str]:
         """Создаёт нового сотрудника с нуля: аккаунт, пользователя, членство, инвайт.
 
@@ -150,6 +164,9 @@ class EmployeeService:
             first_name (str): имя сотрудника.
             last_name (str): фамилия сотрудника.
             company_id (UUID): компания, в которую добавляется сотрудник.
+            struct_adm_id (UUID | None): подразделение, в которое определяется сотрудник.
+            position_id (UUID | None): должность сотрудника в этом подразделении.
+
 
         Returns:
             tuple[UUID, str]: id сотрудника и токен выпущенного инвайта.
@@ -177,6 +194,8 @@ class EmployeeService:
                 token=token,
                 account_id=account.id,
                 user_id=user.id,
+                struct_adm_id=struct_adm_id,
+                position_id=position_id,
             )
         )
 
@@ -225,7 +244,13 @@ class EmployeeService:
         return user_id
 
     async def _reinvite_pending_account(
-        self, account: Account, first_name: str, last_name: str, company_id: UUID
+        self,
+        account: Account,
+        first_name: str,
+        last_name: str,
+        company_id: UUID,
+        struct_adm_id: UUID | None = None,
+        position_id: UUID | None = None,
     ) -> tuple[UUID, str]:
         """Обрабатывает почту с незавершённой регистрацией.
 
@@ -237,6 +262,8 @@ class EmployeeService:
             first_name (str): имя сотрудника.
             last_name (str): фамилия сотрудника.
             company_id (UUID): компания, в которую добавляется сотрудник.
+            struct_adm_id (UUID | None): подразделение, в которое определяется сотрудник.
+            position_id (UUID | None): должность сотрудника в этом подразделении.
 
         Returns:
             tuple[UUID, str]: id сотрудника и токен нового инвайта.
@@ -277,6 +304,8 @@ class EmployeeService:
                 token=token,
                 account_id=account.id,
                 user_id=user_id,
+                struct_adm_id=struct_adm_id,
+                position_id=position_id,
             )
         )
 

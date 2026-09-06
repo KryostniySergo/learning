@@ -40,6 +40,8 @@ async def create_employee(
             email=body.account,
             first_name=body.first_name,
             last_name=body.last_name,
+            struct_adm_id=body.struct_adm_id,
+            position_id=body.position_id,
             current_user=current_user,
         )
     return CreateEmployeeResponse(employee_id=employee_id, invite_sent=token is not None)

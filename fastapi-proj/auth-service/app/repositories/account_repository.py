@@ -8,13 +8,18 @@ class AccountRepository(BaseRepository[Account]):
     model = Account
 
     async def get_by_email(self, email: str) -> Account | None:
-        """Находит Account по email.
+        """Находит действующий Account по email.
+
+        Мягко удалённые аккаунты игнорируются: адрес считается свободным
+        и может быть зарегистрирован заново.
 
         Args:
             email (str): почта для поиска.
 
         Returns:
-            Account | None: найденный аккаунт, либо None, если такой почты нет.
+            Account | None: найденный аккаунт, либо None.
         """
-        result = await self.session.execute(select(Account).where(Account.email == email))
+        result = await self.session.execute(
+            select(Account).where(Account.email == email).where(Account.deleted_at.is_(None))
+        )
         return result.scalar_one_or_none()

@@ -40,3 +40,11 @@ class CompanyNotFoundError(Exception):
 
 class UserNotFoundError(Exception):
     """Исключение, если пользователь не найден при операции, где он должен существовать."""
+
+
+class EmailAlreadyTakenError(Exception):
+    """Исключение, если новая почта уже занята другим аккаунтом."""
+
+
+class ProfileNotFoundError(Exception):
+    """Исключение, если данные пользователя не найдены."""

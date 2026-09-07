@@ -12,6 +12,7 @@ class EventType(str, Enum):
     COMPANY_CREATED = "company.created"
     EMPLOYEE_CREATED = "employee.created"
     EMPLOYEE_REGISTERED = "employee.registered"
+    EMPLOYEE_UPDATED = "employee.updated"
 
     # команды саги онбординга
     ORG_ASSIGN_EMPLOYEE = "org.assign_employee"

@@ -7,6 +7,7 @@ class EventType(str, Enum):
     # доменные события, на которые подписан сервис
     COMPANY_CREATED = "company.created"
     EMPLOYEE_CREATED = "employee.created"
+    EMPLOYEE_UPDATED = "employee.updated"
 
     # собственные доменные события
     TASK_STATUS_CHANGED = "task.status_changed"

@@ -76,3 +76,31 @@ class RegisterEmployeeResponse(BaseModel):
     """Ответ на завершение регистрации сотрудника."""
 
     employee_id: UUID
+
+
+class UpdateProfileRequest(BaseModel):
+    """Тело запроса на изменение личных данных."""
+
+    first_name: str | None = None
+    last_name: str | None = None
+
+
+class ProfileResponse(BaseModel):
+    """Личные данные пользователя."""
+
+    user_id: UUID
+    first_name: str
+    last_name: str
+    email: str
+
+
+class ChangeEmailRequest(BaseModel):
+    """Тело запроса на смену почты."""
+
+    new_account: EmailStr
+
+
+class ConfirmEmailRequest(BaseModel):
+    """Тело запроса на подтверждение новой почты."""
+
+    invite_token: str

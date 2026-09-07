@@ -8,7 +8,7 @@ from app.models.company import Company
 from app.models.inbox_message import InboxMessage, InboxMessageStatus
 from app.models.user import User
 from app.schemas.event_envelope import EventEnvelope
-from app.schemas.event_payloads import CompanyCreatedPayload, EmployeeCreatedPayload
+from app.schemas.event_payloads import CompanyCreatedPayload, EmployeeCreatedPayload, EmployeeUpdatedPayload
 from app.uow import UnitOfWork
 
 logger = logging.getLogger(__name__)
@@ -87,6 +87,7 @@ class InboxService:
         handlers = {
             EventType.COMPANY_CREATED.value: self._handle_company_created,
             EventType.EMPLOYEE_CREATED.value: self._handle_employee_created,
+            EventType.EMPLOYEE_UPDATED.value: self._handle_employee_updated,
         }
         return handlers.get(event_type)
 
@@ -130,3 +131,19 @@ class InboxService:
             company_id=data.company_id,
         )
         self.uow.user.add(user)
+
+    async def _handle_employee_updated(self, payload: dict) -> None:
+        """Обновляет имя и фамилию в локальной реплике сотрудника.
+
+        Args:
+            payload (dict): payload события.
+        """
+        data = EmployeeUpdatedPayload(**payload)
+
+        user = await self.uow.user.get_by_id(data.employee_id)
+        if user is None:
+            logger.info("employee %s not in replica, update skipped", data.employee_id)
+            return
+
+        user.name = data.name
+        user.surname = data.surname

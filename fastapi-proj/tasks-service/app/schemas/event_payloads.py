@@ -17,3 +17,11 @@ class EmployeeCreatedPayload(BaseModel):
     name: str
     surname: str
     company_id: UUID
+
+
+class EmployeeUpdatedPayload(BaseModel):
+    """Payload события employee.updated."""
+
+    employee_id: UUID
+    name: str
+    surname: str

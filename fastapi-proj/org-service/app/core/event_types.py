@@ -11,6 +11,7 @@ class EventType(str, Enum):
     # доменные события, на которые подписан сервис
     COMPANY_CREATED = "company.created"
     EMPLOYEE_CREATED = "employee.created"
+    EMPLOYEE_UPDATED = "employee.updated"
 
     # команды саги, которые исполняет сервис
     ORG_ASSIGN_EMPLOYEE = "org.assign_employee"

@@ -7,6 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.db.session import async_session_maker
 from app.repositories.account_repository import AccountRepository
 from app.repositories.company_repository import CompanyRepository
+from app.repositories.idempotency_key_repository import IdempotencyKeyRepository
 from app.repositories.invite_repository import InviteRepository
 from app.repositories.member_repository import MemberRepository
 from app.repositories.outbox_repository import OutboxMessageRepository
@@ -42,6 +43,7 @@ class UnitOfWork:
         self.secrets = SecretsRepository(self.session)
         self.outbox = OutboxMessageRepository(self.session)
         self.saga = SagaInstanceRepository(self.session)
+        self.idempotency = IdempotencyKeyRepository(self.session)
 
         return self
 

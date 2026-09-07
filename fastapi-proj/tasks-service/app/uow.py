@@ -6,6 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.session import async_session_maker
 from app.repositories.company_repository import CompanyRepository
+from app.repositories.idempotency_key_repository import IdempotencyKeyRepository
 from app.repositories.inbox_message_repository import InboxMessageRepository
 from app.repositories.outbox_message_repository import OutboxMessageRepository
 from app.repositories.task_assignee_repository import TaskAssigneeRepository
@@ -36,6 +37,7 @@ class UnitOfWork:
         self.task_assignee = TaskAssigneeRepository(self.session)
         self.inbox = InboxMessageRepository(self.session)
         self.outbox = OutboxMessageRepository(self.session)
+        self.idempotency = IdempotencyKeyRepository(self.session)
 
         return self
 

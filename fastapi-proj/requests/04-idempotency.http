@@ -1,0 +1,147 @@
+###############################################################################
+# Проверка Idempotency-Key
+#
+# Требуется поднятая система и токен администратора.
+# Перед запуском: пройти регистрацию компании и подставить токен ниже.
+###############################################################################
+
+@authUrl = http://localhost:8000
+@token = PASTE_ADMIN_TOKEN
+
+# Ключ должен быть уникальным для каждого прогона теста.
+# Меняй суффикс при повторных запусках, иначе сработает старая запись.
+@idemKey = test-key-001
+
+###############################################################################
+# Сценарий 1: повтор с тем же ключом возвращает тот же ответ
+###############################################################################
+
+### 1.1 Первый запрос — создаёт сотрудника
+# Ожидается: 201, employee_id, invite_sent: true
+POST {{authUrl}}/auth/api/v1/employees/
+Content-Type: application/json
+Authorization: Bearer {{token}}
+Idempotency-Key: {{idemKey}}
+
+{
+  "account": "idem-test@example.com",
+  "first_name": "Идем",
+  "last_name": "Потентов"
+}
+
+### 1.2 Повтор с тем же ключом
+# Ожидается: ТОТ ЖЕ employee_id, что в 1.1
+# В заголовках ответа: Idempotency-Replayed: true
+# Второй сотрудник НЕ создаётся
+POST {{authUrl}}/auth/api/v1/employees/
+Content-Type: application/json
+Authorization: Bearer {{token}}
+Idempotency-Key: {{idemKey}}
+
+{
+  "account": "idem-test@example.com",
+  "first_name": "Идем",
+  "last_name": "Потентов"
+}
+
+### 1.3 Повтор с тем же ключом, но ДРУГИМ телом
+# Ожидается: всё равно ответ из 1.1 — ключ важнее содержимого
+POST {{authUrl}}/auth/api/v1/employees/
+Content-Type: application/json
+Authorization: Bearer {{token}}
+Idempotency-Key: {{idemKey}}
+
+{
+  "account": "completely-different@example.com",
+  "first_name": "Другой",
+  "last_name": "Человек"
+}
+
+###############################################################################
+# Сценарий 2: без ключа защиты нет
+###############################################################################
+
+### 2.1 Запрос без заголовка Idempotency-Key
+# Ожидается: 201, сотрудник создан
+POST {{authUrl}}/auth/api/v1/employees/
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "account": "no-key@example.com",
+  "first_name": "Без",
+  "last_name": "Ключа"
+}
+
+### 2.2 Тот же запрос повторно, без ключа
+# Ожидается: 409 — почта уже занята в этой компании.
+# Это не идемпотентность, а обычный guard: без ключа middleware не вмешивается
+POST {{authUrl}}/auth/api/v1/employees/
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "account": "no-key@example.com",
+  "first_name": "Без",
+  "last_name": "Ключа"
+}
+
+###############################################################################
+# Сценарий 3: разные ключи — разные операции
+###############################################################################
+
+### 3.1 Новый ключ, новая почта
+# Ожидается: 201, новый employee_id
+POST {{authUrl}}/auth/api/v1/employees/
+Content-Type: application/json
+Authorization: Bearer {{token}}
+Idempotency-Key: test-key-002
+
+{
+  "account": "another-idem@example.com",
+  "first_name": "Второй",
+  "last_name": "Ключев"
+}
+
+###############################################################################
+# Сценарий 4: неуспешные ответы не сохраняются
+###############################################################################
+
+### 4.1 Запрос с ключом, но заведомо неудачный (нет токена)
+# Ожидается: 401. Ответ НЕ сохраняется — сохраняются только 2xx
+POST {{authUrl}}/auth/api/v1/employees/
+Content-Type: application/json
+Idempotency-Key: test-key-003
+
+{
+  "account": "fail-first@example.com",
+  "first_name": "Сначала",
+  "last_name": "Провал"
+}
+
+### 4.2 Тот же ключ, но теперь с токеном
+# Ожидается: 201 — операция выполняется, потому что неудачный ответ 4.1 не сохранён
+POST {{authUrl}}/auth/api/v1/employees/
+Content-Type: application/json
+Authorization: Bearer {{token}}
+Idempotency-Key: test-key-003
+
+{
+  "account": "fail-first@example.com",
+  "first_name": "Сначала",
+  "last_name": "Провал"
+}
+
+###############################################################################
+# Проверка в БД (auth_db)
+#
+#   SELECT key, method, path, status_code, expires_at
+#   FROM idempotency_key ORDER BY created_at;
+#
+# Ожидается три записи: test-key-001, test-key-002, test-key-003.
+# Ключа от запроса 4.1 быть не должно — он завершился 401.
+#
+#   SELECT count(*) FROM account WHERE email = 'idem-test@example.com';
+#
+# Ожидается 1 — несмотря на три запроса в сценарии 1.
+###############################################################################

@@ -1,5 +1,6 @@
 from app.models.base import Base
 from app.models.company import Company
+from app.models.idempotency_key import IdempotencyKey
 from app.models.inbox_message import InboxMessage
 from app.models.outbox_message import OutboxMessage
 from app.models.position import Position
@@ -11,6 +12,7 @@ from app.models.user_position import UserPosition
 __all__ = [
     "Base",
     "Company",
+    "IdempotencyKey",
     "InboxMessage",
     "OutboxMessage",
     "Position",

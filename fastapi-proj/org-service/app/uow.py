@@ -6,6 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.session import async_session_maker
 from app.repositories.company_repository import CompanyRepository
+from app.repositories.idempotency_key_repository import IdempotencyKeyRepository
 from app.repositories.inbox_message_repository import InboxMessageRepository
 from app.repositories.outbox_message_repository import OutboxMessageRepository
 from app.repositories.position_repository import PositionRepository
@@ -42,6 +43,7 @@ class UnitOfWork:
         self.struct_adm_position = StructAdmPositionRepository(self.session)
         self.user = UserRepository(self.session)
         self.user_position = UserPositionRepository(self.session)
+        self.idempotency = IdempotencyKeyRepository(self.session)
 
         return self
 

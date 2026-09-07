@@ -33,6 +33,11 @@ class Settings(BaseSettings):
     smtp_from: str = "noreply@company-system.local"
     app_base_url: str = "http://localhost:8000"
 
+    # Outbox retry settings
+    outbox_max_retries: int = 5
+    outbox_retry_base_seconds: int = 2
+    kafka_dlq_topic: str = "dlq"
+
     @property
     def database_url(self) -> str:
         """database_url Возвращает connection string

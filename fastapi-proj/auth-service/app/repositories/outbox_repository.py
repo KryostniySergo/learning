@@ -1,27 +1,39 @@
-from sqlalchemy import select
+from datetime import datetime
 
+from sqlalchemy import or_, select
+
+from app.core.config import settings
 from app.models.outbox_message import OutboxMessage, OutboxMessageStatus
 from app.repositories.base import BaseRepository
 
 
-class OutboxRepository(BaseRepository[OutboxMessage]):
+class OutboxMessageRepository(BaseRepository[OutboxMessage]):
     model = OutboxMessage
 
     async def get_pending(self, limit: int) -> list[OutboxMessage]:
-        """Возвращает неотправленные сообщения в порядке создания.
+        """Находит события, готовые к публикации.
+
+        Забирает как новые события, так и ранее неудачные, у которых наступило
+        время следующей попытки и не исчерпан лимит ретраев.
 
         Args:
-            limit (int): максимальное количество сообщений в одной пачке.
+            limit (int): максимальный размер пачки.
 
         Returns:
-            list[OutboxMessage]: сообщения со статусом CREATED, отсортированные
-                по occurred_at (старые — первыми), чтобы публиковать по порядку.
+            list[OutboxMessage]: события в порядке возникновения.
         """
-        stmt = (
+        now = datetime.now()
+        result = await self.session.execute(
             select(OutboxMessage)
-            .where(OutboxMessage.status == OutboxMessageStatus.CREATED)
+            .where(
+                or_(
+                    OutboxMessage.status == OutboxMessageStatus.CREATED,
+                    (OutboxMessage.status == OutboxMessageStatus.FAILED)
+                    & (OutboxMessage.retry_count < settings.outbox_max_retries)
+                    & (OutboxMessage.next_retry_at <= now),
+                )
+            )
             .order_by(OutboxMessage.occurred_at)
             .limit(limit)
         )
-        result = await self.session.execute(stmt)
         return list(result.scalars().all())

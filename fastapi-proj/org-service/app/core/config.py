@@ -31,6 +31,11 @@ class Settings(BaseSettings):
     db_pass: str = "12345"
     db_host: str = "localhost"
 
+    # Outbox retry settings
+    outbox_max_retries: int = 5
+    outbox_retry_base_seconds: int = 2
+    kafka_dlq_topic: str = "dlq"
+
     @property
     def database_url(self) -> str:
         """database_url Возвращает connection string

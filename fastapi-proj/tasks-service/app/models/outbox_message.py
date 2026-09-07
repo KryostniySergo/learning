@@ -17,11 +17,10 @@ class OutboxMessageStatus(str, Enum):
     CREATED = "created"
     SENT = "sent"
     FAILED = "failed"
+    DEAD = "dead"
 
 
 class OutboxMessage(Base):
-    """Исходящее событие, ожидающее публикации в Kafka."""
-
     id: Mapped[PyUUID] = mapped_column(primary_key=True, default=uuid4)
     event_id: Mapped[PyUUID] = mapped_column(UUID)
     event_type: Mapped[str] = mapped_column(String(100))
@@ -30,6 +29,8 @@ class OutboxMessage(Base):
     topic: Mapped[str] = mapped_column(String(100))
 
     occurred_at: Mapped[datetime] = mapped_column(TIMESTAMP, default=datetime.now)
+    next_retry_at: Mapped[datetime | None] = mapped_column(TIMESTAMP, nullable=True)
+
     payload: Mapped[dict] = mapped_column(JSONB)
 
     status: Mapped[OutboxMessageStatus] = mapped_column(

@@ -3,9 +3,9 @@ x-auth-env: &auth-env
   DB_PORT: 5432
   DB_NAME: ${AUTH_DB_NAME:-auth_db}
   DB_USER: ${AUTH_DB_USER:-postgres}
-  DB_PASS: ${AUTH_DB_PASS:-12345}
+  DB_PASS: ${AUTH_DB_PASS:?AUTH_DB_PASS is required}
   KAFKA_BOOTSTRAP_SERVERS: kafka:29092
-  JWT_SECRET: ${JWT_SECRET:-super-secret-key-for-learning-project-only}
+  JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required}
   SMTP_HOST: mailhog
   SMTP_PORT: 1025
 
@@ -14,18 +14,18 @@ x-org-env: &org-env
   DB_PORT: 5432
   DB_NAME: ${ORG_DB_NAME:-org_db}
   DB_USER: ${ORG_DB_USER:-postgres}
-  DB_PASS: ${ORG_DB_PASS:-12345}
+  DB_PASS: ${ORG_DB_PASS:?ORG_DB_PASS is required}
   KAFKA_BOOTSTRAP_SERVERS: kafka:29092
-  JWT_SECRET: ${JWT_SECRET:-super-secret-key-for-learning-project-only}
+  JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required}
 
 x-tasks-env: &tasks-env
   DB_HOST: tasks-db
   DB_PORT: 5432
-  DB_NAME: ${TASKS_DB_NAME:-task_db}
+  DB_NAME: ${TASKS_DB_NAME:-tasks_db}
   DB_USER: ${TASKS_DB_USER:-postgres}
-  DB_PASS: ${TASKS_DB_PASS:-12345}
+  DB_PASS: ${TASKS_DB_PASS:?TASKS_DB_PASS is required}
   KAFKA_BOOTSTRAP_SERVERS: kafka:29092
-  JWT_SECRET: ${JWT_SECRET:-super-secret-key-for-learning-project-only}
+  JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required}
 
 services:
   # ---------- инфраструктура ----------
@@ -36,7 +36,7 @@ services:
     environment:
       POSTGRES_DB: ${AUTH_DB_NAME:-auth_db}
       POSTGRES_USER: ${AUTH_DB_USER:-postgres}
-      POSTGRES_PASSWORD: ${AUTH_DB_PASS:-12345}
+      POSTGRES_PASSWORD: ${AUTH_DB_PASS:?AUTH_DB_PASS is required}
     ports:
       - "5432:5432"
     healthcheck:
@@ -44,6 +44,7 @@ services:
       interval: 5s
       timeout: 5s
       retries: 10
+    restart: unless-stopped
 
   org-db:
     image: postgres:16
@@ -51,7 +52,7 @@ services:
     environment:
       POSTGRES_DB: ${ORG_DB_NAME:-org_db}
       POSTGRES_USER: ${ORG_DB_USER:-postgres}
-      POSTGRES_PASSWORD: ${ORG_DB_PASS:-12345}
+      POSTGRES_PASSWORD: ${ORG_DB_PASS:?ORG_DB_PASS is required}
     ports:
       - "5433:5432"
     healthcheck:
@@ -59,6 +60,7 @@ services:
       interval: 5s
       timeout: 5s
       retries: 10
+    restart: unless-stopped
 
   tasks-db:
     image: postgres:16
@@ -66,7 +68,7 @@ services:
     environment:
       POSTGRES_DB: ${TASKS_DB_NAME:-tasks_db}
       POSTGRES_USER: ${TASKS_DB_USER:-postgres}
-      POSTGRES_PASSWORD: ${TASKS_DB_PASS:-12345}
+      POSTGRES_PASSWORD: ${TASKS_DB_PASS:?TASKS_DB_PASS is required}
     ports:
       - "5434:5432"
     healthcheck:
@@ -74,6 +76,7 @@ services:
       interval: 5s
       timeout: 5s
       retries: 10
+    restart: unless-stopped
 
   kafka:
     image: apache/kafka:3.8.0
@@ -97,6 +100,7 @@ services:
       interval: 10s
       timeout: 10s
       retries: 10
+    restart: unless-stopped
 
   mailhog:
     image: mailhog/mailhog
@@ -104,6 +108,7 @@ services:
     ports:
       - "1025:1025"
       - "8025:8025"
+    restart: unless-stopped
 
   # ---------- auth-service ----------
 
@@ -129,6 +134,7 @@ services:
         condition: service_completed_successfully
       kafka:
         condition: service_healthy
+    restart: unless-stopped
 
   auth-outbox:
     build: ./auth-service
@@ -140,6 +146,7 @@ services:
         condition: service_completed_successfully
       kafka:
         condition: service_healthy
+    restart: unless-stopped
 
   auth-saga:
     build: ./auth-service
@@ -151,6 +158,7 @@ services:
         condition: service_completed_successfully
       kafka:
         condition: service_healthy
+    restart: unless-stopped
 
   # ---------- org-service ----------
 
@@ -176,6 +184,7 @@ services:
         condition: service_completed_successfully
       kafka:
         condition: service_healthy
+    restart: unless-stopped
 
   org-inbox:
     build: ./org-service
@@ -187,6 +196,7 @@ services:
         condition: service_completed_successfully
       kafka:
         condition: service_healthy
+    restart: unless-stopped
 
   org-outbox:
     build: ./org-service
@@ -198,6 +208,7 @@ services:
         condition: service_completed_successfully
       kafka:
         condition: service_healthy
+    restart: unless-stopped
 
   org-saga:
     build: ./org-service
@@ -209,6 +220,7 @@ services:
         condition: service_completed_successfully
       kafka:
         condition: service_healthy
+    restart: unless-stopped
 
   # ---------- tasks-service ----------
 
@@ -234,6 +246,7 @@ services:
         condition: service_completed_successfully
       kafka:
         condition: service_healthy
+    restart: unless-stopped
 
   tasks-inbox:
     build: ./tasks-service
@@ -245,6 +258,7 @@ services:
         condition: service_completed_successfully
       kafka:
         condition: service_healthy
+    restart: unless-stopped
 
   tasks-outbox:
     build: ./tasks-service
@@ -256,6 +270,7 @@ services:
         condition: service_completed_successfully
       kafka:
         condition: service_healthy
+    restart: unless-stopped
 
   tasks-saga:
     build: ./tasks-service
@@ -267,3 +282,4 @@ services:
         condition: service_completed_successfully
       kafka:
         condition: service_healthy
+    restart: unless-stopped

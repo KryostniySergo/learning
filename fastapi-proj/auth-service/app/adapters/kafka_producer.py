@@ -13,7 +13,12 @@ class KafkaProducerAdapter:
         Args:
             bootstrap_servers (str): адрес(а) брокеров Kafka, например 'localhost:9092'.
         """
-        self._producer = AIOKafkaProducer(bootstrap_servers=bootstrap_servers)
+        self._producer = AIOKafkaProducer(
+            bootstrap_servers=bootstrap_servers,
+            acks="all",
+            enable_idempotence=True,
+            request_timeout_ms=5000,
+        )
 
     async def start(self) -> None:
         """Устанавливает соединение с брокером. Вызывается один раз при старте процесса."""

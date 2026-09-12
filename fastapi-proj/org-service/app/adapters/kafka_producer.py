@@ -16,7 +16,12 @@ class KafkaProducerAdapter:
         Args:
             bootstrap_servers (str): адрес(а) Kafka-брокера.
         """
-        self._producer = AIOKafkaProducer(bootstrap_servers=bootstrap_servers)
+        self._producer = AIOKafkaProducer(
+            bootstrap_servers=bootstrap_servers,
+            acks="all",
+            enable_idempotence=True,
+            request_timeout_ms=5000,
+        )
 
     async def start(self) -> None:
         """Запускает соединение с Kafka."""

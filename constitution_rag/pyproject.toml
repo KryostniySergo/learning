@@ -1,0 +1,27 @@
+[project]
+name = "constitution-rag"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+authors = [{ name = "KryostniySergo", email = "calve45@mail.ru" }]
+requires-python = ">=3.13"
+dependencies = [
+    "chromadb>=0.5",
+    "fastapi>=0.110",
+    "httpx>=0.28.1",
+    "openai>=1.30",
+    "pydantic>=2.6",
+    "pydantic-settings>=2.2",
+    "pytest>=9.1.1",
+    "pytest-asyncio>=1.4.0",
+    "rank-bm25>=0.2.2",
+    "sentence-transformers>=3.0",
+    "uvicorn[standard]>=0.52.4",
+]
+
+# [project.scripts]
+# constitution-rag = "constitution_rag:main"
+
+# [build-system]
+# requires = ["uv_build>=0.12.10,<0.13.0"]
+# build-backend = "uv_build"

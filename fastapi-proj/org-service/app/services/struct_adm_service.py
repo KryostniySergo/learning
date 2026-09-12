@@ -1,5 +1,5 @@
 import logging
-from datetime import datetime
+from datetime import UTC, datetime
 from uuid import UUID
 
 from app.core.exceptions import (
@@ -157,7 +157,7 @@ class StructAdmService:
         node = await self._get_owned_node(node_id, current_user)
 
         subtree = await self.uow.struct_adm.get_descendants(node.path, include_self=True)
-        deleted_at = datetime.now()
+        deleted_at = datetime.now(UTC)
         for item in subtree:
             item.deleted_at = deleted_at
 

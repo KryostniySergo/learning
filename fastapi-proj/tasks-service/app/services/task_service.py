@@ -1,5 +1,5 @@
 import logging
-from datetime import datetime
+from datetime import UTC, datetime
 from uuid import UUID, uuid4
 
 from app.core.event_types import EventType
@@ -199,7 +199,7 @@ class TaskService:
             NotAuthorizedError: если пользователь не автор, не ответственный и не админ.
         """
         task = await self._get_editable_task(task_id, current_user)
-        deleted_at = datetime.now()
+        deleted_at = datetime.now(UTC)
 
         for watcher in await self.uow.task_watcher.list_by_task(task_id):
             watcher.deleted_at = deleted_at

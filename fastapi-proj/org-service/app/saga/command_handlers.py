@@ -1,5 +1,5 @@
 import logging
-from datetime import datetime
+from datetime import UTC, datetime
 from uuid import uuid4
 
 from app.core.config import settings
@@ -125,7 +125,7 @@ class OrgCommandHandler:
         if cmd.position_id is not None:
             assignment = await self.uow.user_position.get_link(cmd.employee_id, cmd.position_id)
             if assignment is not None:
-                assignment.deleted_at = datetime.now()
+                assignment.deleted_at = datetime.now(UTC)
 
         self.uow.outbox.add(
             build_outbox_message(

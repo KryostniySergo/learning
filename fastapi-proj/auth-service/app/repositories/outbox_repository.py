@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import UTC, datetime
 
 from sqlalchemy import or_, select
 
@@ -22,7 +22,7 @@ class OutboxMessageRepository(BaseRepository[OutboxMessage]):
         Returns:
             list[OutboxMessage]: события в порядке возникновения.
         """
-        now = datetime.now()
+        now = datetime.now(UTC)
         result = await self.session.execute(
             select(OutboxMessage)
             .where(

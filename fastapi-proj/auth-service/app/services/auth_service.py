@@ -1,6 +1,6 @@
 import logging
 import secrets as secrets_lib
-from datetime import datetime
+from datetime import UTC, datetime
 from uuid import UUID, uuid4
 
 from sqlalchemy.exc import IntegrityError
@@ -112,7 +112,7 @@ class AuthService:
             logger.warning("sign_up: token/account mismatch for %s", email)
             raise InviteAccountMismatchError
 
-        if invite.expires_at < datetime.now():
+        if invite.expires_at < datetime.now(UTC):
             invite.status = InviteStatus.FAILED
             await self.uow.commit()
             logger.info("sign_up: invite expired for %s", email)

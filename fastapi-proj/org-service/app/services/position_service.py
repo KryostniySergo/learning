@@ -1,5 +1,5 @@
 import logging
-from datetime import datetime
+from datetime import UTC, datetime
 from uuid import UUID, uuid4
 
 from app.core.exceptions import (
@@ -98,7 +98,7 @@ class PositionService:
         self._require_admin(current_user)
 
         position = await self._get_owned_position(position_id, current_user)
-        deleted_at = datetime.now()
+        deleted_at = datetime.now(UTC)
 
         assignments = await self.uow.user_position.get_by_position(position_id)
         for assignment in assignments:
@@ -187,7 +187,7 @@ class PositionService:
         if link is None:
             raise PositionNotLinkedError
 
-        link.deleted_at = datetime.now()
+        link.deleted_at = datetime.now(UTC)
         await self.uow.commit()
 
         logger.info("position %s unlinked from struct_adm %s", position_id, struct_adm_id)
@@ -267,7 +267,7 @@ class PositionService:
         if assignment is None:
             raise UserNotAssignedError
 
-        assignment.deleted_at = datetime.now()
+        assignment.deleted_at = datetime.now(UTC)
         await self.uow.commit()
 
         logger.info("user %s unassigned from position %s", user_id, position_id)

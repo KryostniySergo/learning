@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from enum import Enum
 from uuid import UUID as PyUUID
 from uuid import uuid4
@@ -18,12 +18,12 @@ class InviteStatus(str, Enum):
 
 
 def default_expiry() -> datetime:
-    """default_expiry Возвращает стандартное время истечения срока токена
+    """default_expiry Возвращает стандартное время истечения срока токена.
 
     Returns:
         datetime: Стандартное время истечения срока токена
     """
-    return datetime.now() + timedelta(days=14)
+    return datetime.now(UTC) + timedelta(days=14)
 
 
 class Invite(Base, TimestampMixin):

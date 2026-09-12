@@ -1,6 +1,6 @@
 import asyncio
 import logging
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from uuid import UUID
 
 from app.adapters.kafka_producer import KafkaProducerAdapter
@@ -84,7 +84,7 @@ class OutboxPublisher:
                 else:
                     delay = settings.outbox_retry_base_seconds * (2 ** (message.retry_count - 1))
                     message.status = OutboxMessageStatus.FAILED
-                    message.next_retry_at = datetime.now() + timedelta(seconds=delay)
+                    message.next_retry_at = datetime.now(UTC) + timedelta(seconds=delay)
                     logger.warning(
                         "Publish failed for %s, retry %d/%d in %ds",
                         message_id,

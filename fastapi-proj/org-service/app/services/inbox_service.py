@@ -1,5 +1,5 @@
 import logging
-from datetime import datetime
+from datetime import UTC, datetime
 from uuid import uuid4
 
 from app.core.config import settings
@@ -67,7 +67,7 @@ class InboxService:
                 event_id=envelope.event_id,
                 event_type=envelope.event_type,
                 consumer_name=settings.consumer_name,
-                received_at=datetime.now(),
+                received_at=datetime.now(UTC),
                 status=InboxMessageStatus.PROCESSED,
             )
         )

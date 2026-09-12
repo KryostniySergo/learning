@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import UTC, datetime
 
 from sqlalchemy import select
 
@@ -19,6 +19,6 @@ class IdempotencyKeyRepository(BaseRepository[IdempotencyKey]):
             IdempotencyKey | None: сохранённый результат, либо None.
         """
         result = await self.session.execute(
-            select(IdempotencyKey).where(IdempotencyKey.key == key).where(IdempotencyKey.expires_at > datetime.now())
+            select(IdempotencyKey).where(IdempotencyKey.key == key).where(IdempotencyKey.expires_at > datetime.now(UTC))
         )
         return result.scalar_one_or_none()

@@ -1,6 +1,6 @@
 import logging
 import secrets as secrets_lib
-from datetime import datetime
+from datetime import UTC, datetime
 from uuid import UUID, uuid4
 
 from app.core.event_types import EventType
@@ -164,7 +164,7 @@ class ProfileService:
             logger.warning("email confirm: invite not found for user %s", user_id)
             raise InviteNotFoundError
 
-        if invite.expires_at < datetime.now():
+        if invite.expires_at < datetime.now(UTC):
             invite.status = InviteStatus.FAILED
             await self.uow.commit()
             raise InviteExpiredError
@@ -182,7 +182,7 @@ class ProfileService:
             raise ProfileNotFoundError
 
         if old_account is not None:
-            old_account.deleted_at = datetime.now()
+            old_account.deleted_at = datetime.now(UTC)
 
         secrets_obj.account_id = new_account.id
         invite.status = InviteStatus.COMPLETED

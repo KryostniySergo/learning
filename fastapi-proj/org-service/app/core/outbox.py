@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import UTC, datetime
 from uuid import UUID, uuid4
 
 from app.core.config import settings
@@ -40,6 +40,6 @@ def build_outbox_message(
         event_type=event_type.value,
         topic=topic or settings.kafka_topic,
         aggregate_id=aggregate_id,
-        occurred_at=datetime.now(),
+        occurred_at=datetime.now(UTC),
         payload=envelope,
     )

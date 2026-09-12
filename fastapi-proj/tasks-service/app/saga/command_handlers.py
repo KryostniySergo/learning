@@ -1,5 +1,5 @@
 import logging
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from uuid import uuid4
 
 from app.core.config import settings
@@ -79,7 +79,7 @@ class TasksCommandHandler:
             company_id=cmd.company_id,
             author_id=cmd.employee_id,
             responsible_id=cmd.employee_id,
-            deadline=datetime.now() + timedelta(days=WELCOME_TASK_DEADLINE_DAYS),
+            deadline=datetime.now(UTC) + timedelta(days=WELCOME_TASK_DEADLINE_DAYS),
             estimate_minutes=WELCOME_TASK_ESTIMATE_MINUTES,
             status=TaskStatus.NEW,
         )

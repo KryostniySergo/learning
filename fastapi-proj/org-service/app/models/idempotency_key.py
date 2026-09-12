@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from uuid import UUID as PyUUID
 from uuid import uuid4
 
@@ -14,7 +14,7 @@ def default_expiry() -> datetime:
     Returns:
         datetime: момент, после которого ключ можно переиспользовать.
     """
-    return datetime.now() + timedelta(hours=24)
+    return datetime.now(UTC) + timedelta(hours=24)
 
 
 class IdempotencyKey(Base):

@@ -1,6 +1,6 @@
 import logging
 import secrets as secrets_lib
-from datetime import datetime
+from datetime import UTC, datetime
 from uuid import UUID, uuid4
 
 from app.core.event_types import EventType
@@ -109,7 +109,7 @@ class EmployeeService:
             logger.warning("register_employee: invite not found or has no user")
             raise InviteNotFoundError
 
-        if invite.expires_at < datetime.now():
+        if invite.expires_at < datetime.now(UTC):
             invite.status = InviteStatus.FAILED
             await self.uow.commit()
             logger.info("register_employee: invite expired for user %s", invite.user_id)

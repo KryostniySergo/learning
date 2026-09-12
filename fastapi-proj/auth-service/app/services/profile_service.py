@@ -13,8 +13,7 @@ from app.core.exceptions import (
 )
 from app.core.outbox import build_outbox_message
 from app.models.account import Account
-from app.models.invite import Invite
-from app.models.invite import Status as InviteStatus
+from app.models.invite import Invite, InviteStatus
 from app.models.user import User
 from app.uow import UnitOfWork
 

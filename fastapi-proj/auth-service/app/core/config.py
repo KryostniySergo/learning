@@ -16,7 +16,7 @@ class Settings(BaseSettings):
     kafka_saga_replies_topic: str = "saga-replies"
 
     # JWT settings
-    jwt_secret: str = "change-me-in-production"
+    jwt_secret: str
     jwt_algorithm: str = "HS256"
     jwt_expire_minutes: int = 60
 
@@ -24,7 +24,7 @@ class Settings(BaseSettings):
     db_name: str = "auth_db"
     db_port: int = 5432
     db_user: str = "postgres"
-    db_pass: str = "12345"
+    db_pass: str
     db_host: str = "localhost"
 
     # SMTP settings

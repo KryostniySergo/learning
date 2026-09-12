@@ -21,7 +21,7 @@ class Settings(BaseSettings):
     kafka_consumer_group: str = "tasks-service"
 
     # JWT settings
-    jwt_secret: str = "change-me-in-production"
+    jwt_secret: str
     jwt_algorithm: str = "HS256"
 
     # DB settings

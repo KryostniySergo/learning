@@ -52,8 +52,6 @@ class SagaCommandConsumer:
 
             await self._consumer.commit()
 
-            await self._consumer.commit()
-
     def stop(self) -> None:
         """Помечает консьюмер для остановки после текущей итерации."""
         self._running = False

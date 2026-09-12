@@ -52,3 +52,16 @@ class KafkaConsumerAdapter:
     async def commit(self) -> None:
         """Коммитит offset текущей позиции чтения."""
         await self._consumer.commit()
+
+    async def seek_to_committed(self) -> None:
+        """Возвращает позицию чтения к последнему закоммиченному offset.
+
+        Без этого незакоммиченное сообщение не будет перечитано в рамках
+        текущей сессии, а следующий успешный commit сдвинет offset за его пределы.
+        """
+        for partition in self._consumer.assignment():
+            committed = await self._consumer.committed(partition)
+            if committed is not None:
+                self._consumer.seek(partition, committed)
+            else:
+                await self._consumer.seek_to_beginning(partition)

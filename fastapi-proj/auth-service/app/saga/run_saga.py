@@ -50,6 +50,8 @@ class SagaConsumer:
                 await self._dispatch(raw_envelope)
             except Exception:
                 logger.exception("SagaConsumer: failed to process envelope, will retry")
+                await self._consumer.seek_to_committed()
+                await asyncio.sleep(2)
                 continue
 
             await self._consumer.commit()

@@ -21,8 +21,32 @@ dependencies = [
 ]
 
 [dependency-groups]
-dev = [
-    "httpx>=0.28.1",
-    "pytest>=9.1.1",
-    "pytest-asyncio>=1.4.0",
+dev = ["httpx>=0.28.1", "pytest>=9.1.1", "pytest-asyncio>=1.4.0"]
+
+[tool.ruff]
+line-length = 120
+target-version = "py313"
+
+[tool.ruff.lint]
+select = [
+    "E",     # pycodestyle
+    "F",     # pyflakes
+    "I",     # isort
+    "B",     # flake8-bugbear
+    "UP",    # pyupgrade
+    "D",     # pydocstyle
+    "ASYNC", # flake8-async
 ]
+ignore = [
+    "D100", # docstring в модуле не требуем
+    "D104", # docstring в пакете не требуем
+    "D203", # конфликтует с D211
+    "D213", # конфликтует с D212
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["D103"]                 # в тестах docstring необязателен
+"alembic/versions/*" = ["D", "E501"]
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"

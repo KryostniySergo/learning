@@ -15,6 +15,7 @@ class OutboxMessageStatus(str, Enum):
     """Статус доставки исходящего события в Kafka."""
 
     CREATED = "created"
+    PROCESSING = "processing"
     SENT = "sent"
     FAILED = "failed"
     DEAD = "dead"

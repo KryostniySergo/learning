@@ -32,21 +32,25 @@ class OutboxPublisher:
         logger.info("OutboxPublisher started, polling every %s seconds", POLL_INTERVAL_SECONDS)
 
         while self._running:
+            await self._release_stale()
             await self._publish_pending_batch()
             await asyncio.sleep(POLL_INTERVAL_SECONDS)
+
+    async def _release_stale(self) -> None:
+        """Возвращает в очередь события, брошенные упавшим publisher'ом."""
+        async with UnitOfWork() as uow:
+            released = await uow.outbox.release_stale_processing()
+        if released:
+            logger.warning("released %d stale PROCESSING messages", released)
 
     def stop(self) -> None:
         """Помечает публикатор для остановки после текущей итерации."""
         self._running = False
 
     async def _publish_pending_batch(self) -> None:
-        """Забирает пачку событий и публикует их по одному.
-
-        Каждое сообщение обрабатывается в собственной транзакции, чтобы неудача
-        одного не блокировала публикацию остальных.
-        """
+        """Захватывает пачку событий и публикует их по одному."""
         async with UnitOfWork() as uow:
-            messages = await uow.outbox.get_pending(BATCH_SIZE)
+            messages = await uow.outbox.claim_pending(BATCH_SIZE)
             message_ids = [message.id for message in messages]
 
         for message_id in message_ids:
@@ -64,10 +68,7 @@ class OutboxPublisher:
         """
         async with UnitOfWork() as uow:
             message = await uow.outbox.get_by_id(message_id)
-            if message is None or message.status not in (
-                OutboxMessageStatus.CREATED,
-                OutboxMessageStatus.FAILED,
-            ):
+            if message is None or message.status != OutboxMessageStatus.PROCESSING:
                 return
 
             try:

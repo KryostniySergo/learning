@@ -26,15 +26,20 @@ uv run python -m app.saga.run_saga_consumer   # в отдельном терми
 | `DB_PORT` | `5434` | Порт Postgres (снаружи Docker) |
 | `DB_NAME` | `tasks_db` | Имя базы |
 | `DB_USER` | `postgres` | Пользователь |
-| `DB_PASS` | — | Пароль |
+| `DB_PASS` | — обязательна | Пароль |
 | `KAFKA_BOOTSTRAP_SERVERS` | `localhost:9092` | Адрес брокера |
 | `KAFKA_TOPIC` | `tasks-events` | Топик собственных событий |
 | `KAFKA_CONSUMER_TOPIC` | `auth-events` | Топик, из которого читаются события |
 | `KAFKA_CONSUMER_GROUP` | `tasks-service` | Consumer group |
 | `KAFKA_SAGA_COMMANDS_TOPIC` | `saga-commands` | Топик команд саги |
 | `KAFKA_SAGA_REPLIES_TOPIC` | `saga-replies` | Топик ответов саги |
-| `JWT_SECRET` | — | Общий секрет подписи токенов |
+| `KAFKA_DLQ_TOPIC` | `dlq` | Топик для необработанных сообщений |
+| `OUTBOX_MAX_RETRIES` | `5` | Число попыток публикации до DLQ |
+| `OUTBOX_RETRY_BASE_SECONDS` | `2` | База экспоненциальной задержки ретраев |
+| `JWT_SECRET` | — обязательна | Общий секрет подписи токенов |
 | `JWT_ALGORITHM` | `HS256` | Алгоритм подписи |
+| `PRODUCER_NAME` | `tasks-service` | Имя в поле `producer` конверта |
+| `CONSUMER_NAME` | `tasks-service` | Имя в записях inbox |
 
 ## Эндпоинты
 
@@ -48,6 +53,8 @@ uv run python -m app.saga.run_saga_consumer   # в отдельном терми
 | `PATCH` | `/tasks/{id}` | Изменяет поля задачи |
 | `PUT` | `/tasks/{id}/status` | Меняет статус, публикует `task.status_changed` |
 | `DELETE` | `/tasks/{id}` | Удаляет задачу с участниками |
+
+Небезопасные операции принимают необязательный заголовок `Idempotency-Key`.
 
 ## Права
 
@@ -69,6 +76,9 @@ NEW ──▶ IN_PROGRESS ──▶ DONE
 переходов объявлена в `app/models/task.py` рядом с самим enum, сервис сверяется
 с ней при каждой смене статуса.
 
+Каждая смена статуса публикует `task.status_changed` через transactional outbox —
+событие ложится в ту же транзакцию, что и само изменение.
+
 ## Участники
 
 | Поле | Тип | Хранение |
@@ -82,6 +92,15 @@ NEW ──▶ IN_PROGRESS ──▶ DONE
 и состоять в той же компании, что и автор задачи. Если сотрудник ещё не приехал
 из `auth-service` через Kafka, создание задачи вернёт `404`.
 
+## Роль в саге онбординга
+
+Отдельный процесс слушает топик команд и выполняет `tasks.create_welcome_task`:
+создаёт новому сотруднику приветственную задачу со сроком в неделю. Ответ уходит
+оркестратору через `saga-replies`.
+
+Если сотрудника ещё нет в реплике, команда откладывается и повторяется, а после
+исчерпания лимита попыток уходит в DLQ.
+
 ## Модель данных
 
 | Таблица | Назначение |
@@ -89,6 +108,7 @@ NEW ──▶ IN_PROGRESS ──▶ DONE
 | `task` | Задачи |
 | `task_watcher`, `task_assignee` | Участники задачи |
 | `company`, `user` | Реплики из auth-service |
+| `idempotency_key` | Сохранённые ответы небезопасных операций |
 | `outbox_message`, `inbox_message` | Транспорт событий |
 
 ## Тесты
@@ -96,3 +116,6 @@ NEW ──▶ IN_PROGRESS ──▶ DONE
 ```bash
 uv run pytest -v
 ```
+
+Схема тестовой базы накатывается через Alembic — те же миграции, что и в рабочем
+окружении.

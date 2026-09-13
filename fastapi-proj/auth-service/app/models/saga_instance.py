@@ -1,9 +1,9 @@
-from datetime import datetime
+from datetime import UTC, datetime
 from enum import Enum
 from uuid import UUID as PyUUID
 from uuid import uuid4
 
-from sqlalchemy import UUID, DateTime, String, Text
+from sqlalchemy import TIMESTAMP, UUID, DateTime, String, Text
 from sqlalchemy import Enum as SqlEnum
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -49,4 +49,8 @@ class SagaInstance(Base):
     error: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.now)
-    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.now, onupdate=datetime.now)
+    updated_at: Mapped[datetime] = mapped_column(
+        TIMESTAMP(timezone=True),
+        default=lambda: datetime.now(UTC),
+        onupdate=lambda: datetime.now(UTC),
+    )

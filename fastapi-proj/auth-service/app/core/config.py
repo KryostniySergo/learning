@@ -38,9 +38,12 @@ class Settings(BaseSettings):
     outbox_retry_base_seconds: int = 2
     kafka_dlq_topic: str = "dlq"
 
+    saga_timeout_seconds: int = 300
+    saga_watchdog_interval_seconds: int = 60
+
     @property
     def database_url(self) -> str:
-        """database_url Возвращает connection string
+        """database_url Возвращает connection string.
 
         Returns:
             str: Connection string

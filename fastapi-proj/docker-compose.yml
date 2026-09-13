@@ -283,3 +283,15 @@ services:
       kafka:
         condition: service_healthy
     restart: unless-stopped
+  
+  auth-watchdog:
+    build: ./auth-service
+    container_name: auth-watchdog
+    environment: *auth-env
+    command: python -m app.saga.run_watchdog
+    depends_on:
+      auth-migrate:
+        condition: service_completed_successfully
+      kafka:
+        condition: service_healthy
+    restart: unless-stopped

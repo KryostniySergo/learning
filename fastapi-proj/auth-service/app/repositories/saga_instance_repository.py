@@ -1,3 +1,4 @@
+from datetime import UTC, datetime, timedelta
 from uuid import UUID
 
 from sqlalchemy import select
@@ -26,3 +27,24 @@ class SagaInstanceRepository(BaseRepository[SagaInstance]):
             .limit(1)
         )
         return result.scalar_one_or_none()
+
+    async def get_stale(self, timeout_seconds: int, limit: int = 50) -> list[SagaInstance]:
+        """Находит саги, зависшие без движения дольше таймаута.
+
+        Args:
+            timeout_seconds (int): сколько секунд бездействия считается зависанием.
+            limit (int): максимальное количество саг за один проход.
+
+        Returns:
+            list[SagaInstance]: зависшие саги, самые старые первыми.
+        """
+        threshold = datetime.now(UTC) - timedelta(seconds=timeout_seconds)
+
+        result = await self.session.execute(
+            select(SagaInstance)
+            .where(SagaInstance.status.in_([SagaStatus.RUNNING, SagaStatus.COMPENSATING]))
+            .where(SagaInstance.updated_at < threshold)
+            .order_by(SagaInstance.updated_at)
+            .limit(limit)
+        )
+        return list(result.scalars().all())

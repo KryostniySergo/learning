@@ -1,4 +1,5 @@
 import os
+from pathlib import Path
 
 os.environ["DB_NAME"] = os.environ.get("TEST_DB_NAME", "tasks_db_test")
 os.environ["JWT_SECRET"] = "test-secret-key-for-tests-only-32-bytes"
@@ -11,14 +12,15 @@ from uuid import UUID, uuid4
 import jwt
 import pytest
 import pytest_asyncio
+from alembic.config import Config
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import create_async_engine
 
+from alembic import command
 from app.core.config import settings
 from app.db.session import async_session_maker, engine
 from app.main import app
-from app.models.base import Base
 from app.models.company import Company
 from app.models.user import User
 
@@ -67,31 +69,44 @@ def event_loop():
     loop.close()
 
 
+def run_migrations() -> None:
+    """Применяет миграции Alembic к тестовой базе.
+
+    Alembic настроен на асинхронный движок и внутри вызывает asyncio.run(),
+    поэтому запускать его напрямую из корутины нельзя. Выполняем в отдельном
+    потоке, где своего event loop нет.
+    """
+    root = Path(__file__).resolve().parent.parent
+    config = Config(str(root / "alembic.ini"))
+    config.set_main_option("script_location", str(root / "alembic"))
+    config.set_main_option("sqlalchemy.url", settings.database_url)
+    command.upgrade(config, "head")
+
+
+async def run_migrations_in_thread() -> None:
+    """Прогоняет миграции, не блокируя текущий event loop."""
+    await asyncio.to_thread(run_migrations)
+
+
 @pytest_asyncio.fixture(scope="session", autouse=True)
 async def prepare_database() -> AsyncIterator[None]:
-    """Создаёт тестовую БД и схему один раз на сессию.
+    """Пересоздаёт тестовую БД и накатывает миграции один раз на сессию.
 
     Yields:
         None: управление тестам после подготовки схемы.
     """
     admin_url = (
-        f"postgresql+asyncpg://{settings.db_user}:{settings.db_pass}"
-        f"@{settings.db_host}:{settings.db_port}/postgres"
+        f"postgresql+asyncpg://{settings.db_user}:{settings.db_pass}@{settings.db_host}:{settings.db_port}/postgres"
     )
     admin_engine = create_async_engine(admin_url, isolation_level="AUTOCOMMIT")
 
     async with admin_engine.connect() as conn:
-        exists = await conn.scalar(
-            text("SELECT 1 FROM pg_database WHERE datname = :name"),
-            {"name": settings.db_name},
-        )
-        if not exists:
-            await conn.execute(text(f'CREATE DATABASE "{settings.db_name}"'))
+        await conn.execute(text(f'DROP DATABASE IF EXISTS "{settings.db_name}" WITH (FORCE)'))
+        await conn.execute(text(f'CREATE DATABASE "{settings.db_name}"'))
 
     await admin_engine.dispose()
 
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
+    await run_migrations_in_thread()
 
     yield
 
@@ -156,13 +171,7 @@ async def replica() -> dict:
         "company_id": company_id,
         "author_id": author_id,
         "other_id": other_id,
-        "author_headers": {
-            "Authorization": f"Bearer {make_token(author_id, company_id, 'user')}"
-        },
-        "other_headers": {
-            "Authorization": f"Bearer {make_token(other_id, company_id, 'user')}"
-        },
-        "admin_headers": {
-            "Authorization": f"Bearer {make_token(uuid4(), company_id, 'admin')}"
-        },
+        "author_headers": {"Authorization": f"Bearer {make_token(author_id, company_id, 'user')}"},
+        "other_headers": {"Authorization": f"Bearer {make_token(other_id, company_id, 'user')}"},
+        "admin_headers": {"Authorization": f"Bearer {make_token(uuid4(), company_id, 'admin')}"},
     }

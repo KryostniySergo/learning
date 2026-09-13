@@ -1,20 +1,31 @@
+import asyncio
 import os
+
+os.environ["DB_NAME"] = os.environ.get("TEST_DB_NAME", "auth_db_test")
+os.environ["JWT_SECRET"] = "test-secret-key-for-tests-only-32-bytes"
+
+import os
+from collections.abc import AsyncIterator
+from pathlib import Path
+
+import pytest_asyncio
+from alembic.config import Config
+from sqlalchemy import text
+from sqlalchemy.ext.asyncio import create_async_engine
+
+from alembic import command
+from app.core.config import settings
+from app.db.session import async_session_maker, engine
 
 # переменные должны быть выставлены до импорта app — конфиг читается при импорте
 os.environ["DB_NAME"] = os.environ.get("TEST_DB_NAME", "auth_db_test")
 os.environ["JWT_SECRET"] = "test-secret-key-for-tests-only-32-bytes"
 
-from collections.abc import AsyncIterator
 
 import pytest
-import pytest_asyncio
-from app.core.config import settings
-from app.db.session import async_session_maker, engine
-from app.main import app
-from app.models.base import Base
 from httpx import ASGITransport, AsyncClient
-from sqlalchemy import text
-from sqlalchemy.ext.asyncio import create_async_engine
+
+from app.main import app
 
 TABLES_TO_CLEAN = [
     "outbox_message",
@@ -29,9 +40,28 @@ TABLES_TO_CLEAN = [
 ]
 
 
+def run_migrations() -> None:
+    """Применяет миграции Alembic к тестовой базе.
+
+    Alembic настроен на асинхронный движок и внутри вызывает asyncio.run(),
+    поэтому запускать его напрямую из корутины нельзя. Выполняем в отдельном
+    потоке, где своего event loop нет.
+    """
+    root = Path(__file__).resolve().parent.parent
+    config = Config(str(root / "alembic.ini"))
+    config.set_main_option("script_location", str(root / "alembic"))
+    config.set_main_option("sqlalchemy.url", settings.database_url)
+    command.upgrade(config, "head")
+
+
+async def run_migrations_in_thread() -> None:
+    """Прогоняет миграции, не блокируя текущий event loop."""
+    await asyncio.to_thread(run_migrations)
+
+
 @pytest_asyncio.fixture(scope="session", autouse=True)
 async def prepare_database() -> AsyncIterator[None]:
-    """Создаёт тестовую БД и схему один раз на сессию тестов.
+    """Пересоздаёт тестовую БД и накатывает миграции один раз на сессию.
 
     Yields:
         None: управление тестам после подготовки схемы.
@@ -42,17 +72,12 @@ async def prepare_database() -> AsyncIterator[None]:
     admin_engine = create_async_engine(admin_url, isolation_level="AUTOCOMMIT")
 
     async with admin_engine.connect() as conn:
-        exists = await conn.scalar(
-            text("SELECT 1 FROM pg_database WHERE datname = :name"),
-            {"name": settings.db_name},
-        )
-        if not exists:
-            await conn.execute(text(f'CREATE DATABASE "{settings.db_name}"'))
+        await conn.execute(text(f'DROP DATABASE IF EXISTS "{settings.db_name}" WITH (FORCE)'))
+        await conn.execute(text(f'CREATE DATABASE "{settings.db_name}"'))
 
     await admin_engine.dispose()
 
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
+    await run_migrations_in_thread()
 
     yield
 

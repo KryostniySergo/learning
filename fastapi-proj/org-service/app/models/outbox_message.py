@@ -28,8 +28,8 @@ class OutboxMessage(Base):
 
     topic: Mapped[str] = mapped_column(String(100))
 
-    occurred_at: Mapped[datetime] = mapped_column(TIMESTAMP, default=datetime.now)
-    next_retry_at: Mapped[datetime | None] = mapped_column(TIMESTAMP, nullable=True)
+    occurred_at: Mapped[datetime] = mapped_column(TIMESTAMP(timezone=True), default=datetime.now)
+    next_retry_at: Mapped[datetime | None] = mapped_column(TIMESTAMP(timezone=True), nullable=True)
 
     payload: Mapped[dict] = mapped_column(JSONB)
 

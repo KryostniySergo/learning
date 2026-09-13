@@ -32,5 +32,5 @@ class IdempotencyKey(Base):
     status_code: Mapped[int] = mapped_column(INT)
     response_body: Mapped[str] = mapped_column(Text)
 
-    created_at: Mapped[datetime] = mapped_column(TIMESTAMP, default=datetime.now)
-    expires_at: Mapped[datetime] = mapped_column(TIMESTAMP, default=default_expiry)
+    created_at: Mapped[datetime] = mapped_column(TIMESTAMP(timezone=True), default=datetime.now)
+    expires_at: Mapped[datetime] = mapped_column(TIMESTAMP(timezone=True), default=default_expiry)

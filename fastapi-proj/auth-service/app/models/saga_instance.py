@@ -3,7 +3,7 @@ from enum import Enum
 from uuid import UUID as PyUUID
 from uuid import uuid4
 
-from sqlalchemy import TIMESTAMP, UUID, String, Text
+from sqlalchemy import UUID, DateTime, String, Text
 from sqlalchemy import Enum as SqlEnum
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -48,5 +48,5 @@ class SagaInstance(Base):
     status: Mapped[SagaStatus] = mapped_column(SqlEnum(SagaStatus), default=SagaStatus.RUNNING)
     error: Mapped[str | None] = mapped_column(Text, nullable=True)
 
-    created_at: Mapped[datetime] = mapped_column(TIMESTAMP, default=datetime.now)
-    updated_at: Mapped[datetime] = mapped_column(TIMESTAMP, default=datetime.now, onupdate=datetime.now)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.now)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.now, onupdate=datetime.now)

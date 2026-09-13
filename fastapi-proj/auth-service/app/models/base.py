@@ -1,13 +1,12 @@
 import re
 from datetime import datetime
 
-from sqlalchemy import DateTime
+from sqlalchemy import DateTime, func
 from sqlalchemy.orm import DeclarativeBase, Mapped, declared_attr, mapped_column
-from sqlalchemy.sql import func
 
 
 def camel_to_snake(name: str) -> str:
-    """camel_to_snake переводит название класса формата UsersPositions в user_position
+    """camel_to_snake переводит название класса формата UsersPositions в user_position.
 
     Args:
         name (str): Название класса
@@ -28,5 +27,5 @@ class Base(DeclarativeBase):
 
 
 class TimestampMixin:
-    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
-    deleted_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True, default=None)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    deleted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True, default=None)

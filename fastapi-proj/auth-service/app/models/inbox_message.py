@@ -3,7 +3,7 @@ from enum import Enum
 from uuid import UUID as PyUUID
 from uuid import uuid4
 
-from sqlalchemy import TIMESTAMP, UUID, String
+from sqlalchemy import UUID, DateTime, String
 from sqlalchemy import Enum as SqlEnum
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -22,5 +22,5 @@ class InboxMessage(Base):
     event_type: Mapped[str] = mapped_column(String(100))
     consumer_name: Mapped[str] = mapped_column(String(100))  # какой обработчик/сервис это принял
 
-    received_at: Mapped[datetime] = mapped_column(TIMESTAMP, default=datetime.now)
+    received_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.now)
     status: Mapped[InboxMessageStatus] = mapped_column(SqlEnum(InboxMessageStatus), default=InboxMessageStatus.RECEIVED)

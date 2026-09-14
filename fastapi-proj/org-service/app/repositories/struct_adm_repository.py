@@ -10,6 +10,8 @@ from app.repositories.base import BaseRepository
 
 
 class StructAdmRepository(BaseRepository[StructAdm]):
+    """Репозиторий для работы с организационной структурой компании."""
+
     model = StructAdm
 
     def create_root(self, name: str, company_id: PyUUID) -> StructAdm:

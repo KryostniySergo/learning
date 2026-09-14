@@ -7,6 +7,8 @@ from app.repositories.base import BaseRepository
 
 
 class UserPositionRepository(BaseRepository[UserPosition]):
+    """Репозиторий для работы с связями сотрудников и должностей."""
+
     model = UserPosition
 
     async def get_by_user(self, user_id: PyUUID) -> list[UserPosition]:

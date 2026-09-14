@@ -10,11 +10,15 @@ from app.models.base import Base, TimestampMixin
 
 
 class Role(str, Enum):
+    """Роль пользователя в компании (ADMIN или USER)."""
+
     ADMIN = "admin"
     USER = "user"
 
 
 class Member(Base, TimestampMixin):
+    """Членство сотрудника в компании (привязка пользователя к компании)."""
+
     id: Mapped[PyUUID] = mapped_column(primary_key=True, default=uuid4)
 
     user_id: Mapped[PyUUID] = mapped_column(ForeignKey("user.id"))

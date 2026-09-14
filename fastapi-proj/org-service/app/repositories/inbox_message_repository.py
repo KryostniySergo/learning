@@ -7,6 +7,8 @@ from app.repositories.base import BaseRepository
 
 
 class InboxMessageRepository(BaseRepository[InboxMessage]):
+    """Репозиторий для работы с inbox сообщениями."""
+
     model = InboxMessage
 
     async def get_by_event_id(self, event_id: UUID) -> InboxMessage | None:

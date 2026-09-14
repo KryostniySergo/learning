@@ -5,6 +5,8 @@ from app.repositories.base import BaseRepository
 
 
 class InviteRepository(BaseRepository[Invite]):
+    """Репозиторий для работы с приглашениями на регистрацию."""
+
     model = Invite
 
     async def get_by_token(self, token: str) -> Invite | None:

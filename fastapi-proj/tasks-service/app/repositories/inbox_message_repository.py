@@ -7,6 +7,8 @@ from app.repositories.base import BaseRepository
 
 
 class InboxMessageRepository(BaseRepository[InboxMessage]):
+    """Репозиторий для работы с inbox сообщениями."""
+
     model = InboxMessage
 
     async def get_by_event_id(self, event_id: UUID) -> InboxMessage | None:
@@ -18,7 +20,5 @@ class InboxMessageRepository(BaseRepository[InboxMessage]):
         Returns:
             InboxMessage | None: найденная запись, либо None.
         """
-        result = await self.session.execute(
-            select(InboxMessage).where(InboxMessage.event_id == event_id)
-        )
+        result = await self.session.execute(select(InboxMessage).where(InboxMessage.event_id == event_id))
         return result.scalar_one_or_none()

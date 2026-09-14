@@ -7,6 +7,8 @@ from app.repositories.base import BaseRepository
 
 
 class IdempotencyKeyRepository(BaseRepository[IdempotencyKey]):
+    """Репозиторий для работы с ключами идемпотентности."""
+
     model = IdempotencyKey
 
     async def get_active(self, key: str) -> IdempotencyKey | None:

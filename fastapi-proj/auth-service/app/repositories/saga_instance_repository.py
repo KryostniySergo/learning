@@ -8,6 +8,8 @@ from app.repositories.base import BaseRepository
 
 
 class SagaInstanceRepository(BaseRepository[SagaInstance]):
+    """Репозиторий для работы с состояниями саги онбординга."""
+
     model = SagaInstance
 
     async def get_running_by_employee(self, employee_id: UUID) -> SagaInstance | None:

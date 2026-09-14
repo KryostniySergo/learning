@@ -7,6 +7,8 @@ from app.repositories.base import BaseRepository
 
 
 class MemberRepository(BaseRepository[Member]):
+    """Репозиторий для работы с членством сотрудников в компаниях."""
+
     model = Member
 
     async def get_by_user_id(self, user_id: UUID) -> Member | None:

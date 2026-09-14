@@ -22,6 +22,8 @@ class OutboxMessageStatus(str, Enum):
 
 
 class OutboxMessage(Base):
+    """Сохранённое событие доменных объектов — для асинхронной публикации в Kafka."""
+
     id: Mapped[PyUUID] = mapped_column(primary_key=True, default=uuid4)
     event_id: Mapped[PyUUID] = mapped_column(UUID)
     event_type: Mapped[str] = mapped_column(String(100))

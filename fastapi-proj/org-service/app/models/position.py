@@ -8,6 +8,8 @@ from app.models.base import Base, TimestampMixin
 
 
 class Position(Base, TimestampMixin):
+    """Должность в компании."""
+
     id: Mapped[PyUUID] = mapped_column(primary_key=True, default=uuid4)
     title: Mapped[str] = mapped_column(String(255))
     company_id: Mapped[PyUUID] = mapped_column(ForeignKey("company.id"), nullable=False)

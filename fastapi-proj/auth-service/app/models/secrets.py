@@ -8,6 +8,8 @@ from app.models.base import Base, TimestampMixin
 
 
 class Secrets(Base, TimestampMixin):
+    """Секреты пользователя: хешированный пароль."""
+
     id: Mapped[PyUUID] = mapped_column(primary_key=True, default=uuid4)
     password_hash: Mapped[str] = mapped_column(String(120), nullable=False)
 

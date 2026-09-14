@@ -11,12 +11,16 @@ from app.models.base import Base
 
 
 class InboxMessageStatus(str, Enum):
+    """Статус обработки входящего события."""
+
     RECEIVED = "received"
     PROCESSED = "processed"
     FAILED = "failed"
 
 
 class InboxMessage(Base):
+    """Отметка об обработанном входящем событии — защита от повторной обработки."""
+
     id: Mapped[PyUUID] = mapped_column(primary_key=True, default=uuid4)
     event_id: Mapped[PyUUID] = mapped_column(UUID, unique=True, index=True)
     event_type: Mapped[str] = mapped_column(String(100))

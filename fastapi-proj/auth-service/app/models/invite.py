@@ -11,6 +11,8 @@ from app.models.base import Base, TimestampMixin
 
 
 class InviteStatus(str, Enum):
+    """Статус инвайта (CREATED, IN_PROGRESS, COMPLETED или FAILED)."""
+
     CREATED = "created"
     IN_PROGRESS = "in_progress"
     COMPLETED = "completed"
@@ -18,7 +20,7 @@ class InviteStatus(str, Enum):
 
 
 def default_expiry() -> datetime:
-    """default_expiry Возвращает стандартное время истечения срока токена.
+    """Возвращает стандартное время истечения срока токена.
 
     Returns:
         datetime: Стандартное время истечения срока токена
@@ -27,6 +29,8 @@ def default_expiry() -> datetime:
 
 
 class Invite(Base, TimestampMixin):
+    """Временная запись для завершения регистрации (инвайт)."""
+
     id: Mapped[PyUUID] = mapped_column(primary_key=True, default=uuid4)
     token: Mapped[str] = mapped_column(String(255), unique=True, index=True)
     status: Mapped[InviteStatus] = mapped_column(SqlEnum(InviteStatus), default=InviteStatus.CREATED)

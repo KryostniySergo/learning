@@ -7,6 +7,8 @@ from app.repositories.base import BaseRepository
 
 
 class SecretsRepository(BaseRepository[Secrets]):
+    """Репозиторий для работы с секретами пользователя (пароли)."""
+
     model = Secrets
 
     async def get_by_user_id(self, user_id: UUID) -> Secrets | None:

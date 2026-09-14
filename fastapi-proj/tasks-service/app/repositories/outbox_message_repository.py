@@ -8,6 +8,8 @@ from app.repositories.base import BaseRepository
 
 
 class OutboxMessageRepository(BaseRepository[OutboxMessage]):
+    """Репозиторий для работы с outbox сообщениями."""
+
     model = OutboxMessage
 
     async def claim_pending(self, limit: int) -> list[OutboxMessage]:

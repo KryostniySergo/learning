@@ -7,6 +7,8 @@ from app.repositories.base import BaseRepository
 
 
 class PositionRepository(BaseRepository[Position]):
+    """Репозиторий для работы с должностями."""
+
     model = Position
 
     async def get_by_company(self, company_id: PyUUID) -> list[Position]:

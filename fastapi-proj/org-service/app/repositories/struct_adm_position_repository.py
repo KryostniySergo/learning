@@ -7,6 +7,8 @@ from app.repositories.base import BaseRepository
 
 
 class StructAdmPositionRepository(BaseRepository[StructAdmPosition]):
+    """Репозиторий для работы с привязками должностей к подразделениям."""
+
     model = StructAdmPosition
 
     async def get_by_struct_adm(self, struct_adm_id: PyUUID) -> list[StructAdmPosition]:

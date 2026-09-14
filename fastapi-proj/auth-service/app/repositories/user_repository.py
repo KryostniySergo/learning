@@ -3,4 +3,6 @@ from app.repositories.base import BaseRepository
 
 
 class UserRepository(BaseRepository[User]):
+    """Репозиторий для работы с пользователями."""
+
     model = User

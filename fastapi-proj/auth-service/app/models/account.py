@@ -8,6 +8,8 @@ from app.models.base import Base, TimestampMixin
 
 
 class Account(Base, TimestampMixin):
+    """Аккаунт сотрудника (почта) — используется для аутентификации."""
+
     id: Mapped[PyUUID] = mapped_column(primary_key=True, default=uuid4)
     email: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
 

@@ -5,6 +5,8 @@ from app.repositories.base import BaseRepository
 
 
 class AccountRepository(BaseRepository[Account]):
+    """Репозиторий для работы с аккаунтами (почты)."""
+
     model = Account
 
     async def get_by_email(self, email: str) -> Account | None:

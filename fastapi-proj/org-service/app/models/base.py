@@ -6,7 +6,7 @@ from sqlalchemy.orm import DeclarativeBase, Mapped, declared_attr, mapped_column
 
 
 def camel_to_snake(name: str) -> str:
-    """camel_to_snake переводит название класса формата UsersPositions в user_position
+    """camel_to_snake переводит название класса формата UsersPositions в user_position.
 
     Args:
         name (str): Название класса
@@ -21,11 +21,15 @@ def camel_to_snake(name: str) -> str:
 
 
 class Base(DeclarativeBase):
+    """Базовый класс для SQLAlchemy ORM моделей."""
+
     @declared_attr.directive
     def __tablename__(cls) -> str:  # noqa: D105
         return camel_to_snake(cls.__name__)
 
 
 class TimestampMixin:
+    """Миксин с временными метками для всех моделей."""
+
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     deleted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True, default=None)

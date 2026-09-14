@@ -7,6 +7,8 @@ from app.repositories.base import BaseRepository
 
 
 class TaskRepository(BaseRepository[Task]):
+    """Репозиторий для работы с задачами."""
+
     model = Task
 
     async def list_by_company(
@@ -27,11 +29,7 @@ class TaskRepository(BaseRepository[Task]):
         Returns:
             list[Task]: задачи компании, новые первыми.
         """
-        query = (
-            select(Task)
-            .where(Task.company_id == company_id)
-            .where(Task.deleted_at.is_(None))
-        )
+        query = select(Task).where(Task.company_id == company_id).where(Task.deleted_at.is_(None))
         if status is not None:
             query = query.where(Task.status == status)
         query = query.order_by(Task.created_at.desc()).limit(limit).offset(offset)

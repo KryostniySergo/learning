@@ -3,12 +3,12 @@ import time
 from contextlib import asynccontextmanager
 from typing import Annotated
 
-from fastapi import Depends, FastAPI, HTTPException, Query
+from fastapi import Depends, FastAPI, HTTPException, Path, Query
 from fastapi.concurrency import run_in_threadpool
 
 from app.config import settings
 from app.deps import get_retriever, get_store
-from app.schemas import Citation, SearchResponse
+from app.schemas import ArticleResponse, Citation, SearchResponse
 from app.search.embedder import Embedder
 from app.search.retriever import Retriever
 from app.search.store import ChromaStore
@@ -65,4 +65,19 @@ async def search(
         took_ms=int((time.perf_counter() - started) * 1000),
         collection=settings.collection_name,
         results=[Citation.from_hit(h) for h in hits],
+    )
+
+
+@app.get("/articles/{number}", response_model=ArticleResponse)
+def get_article(
+    store: Annotated[ChromaStore, Depends(get_store)],
+    number: Annotated[str, Path(pattern=r"^\d{1,3}(\.\d)?$", examples=["3", "67.1"])],
+) -> ArticleResponse:
+    """Точная выборка статьи по номеру: фильтр по метаданным, без векторного поиска."""
+    hits = store.get_by_article(number)
+    if not hits:
+        raise HTTPException(status_code=404, detail=f"Статья {number} не найдена")
+    return ArticleResponse(
+        article=number,
+        parts=[Citation.from_hit(h, with_score=False) for h in hits],
     )

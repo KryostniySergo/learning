@@ -79,3 +79,35 @@ def test_readyz(client):
     assert client.get("/readyz").status_code == 200
     app.state.store = FakeStore(count=0)
     assert client.get("/readyz").status_code == 503
+
+
+class ArticleStore(FakeStore):
+    """Хранилище с точной выборкой по статье."""
+
+    def get_by_article(self, article: str) -> list[Hit]:
+        """Фрагменты из HITS с нужным номером статьи."""
+        return [h for h in HITS if h.article == article]
+
+
+def test_article_found(client):
+    """/articles/3 отдаёт части статьи без скоров."""
+    app.state.store = ArticleStore(count=len(HITS))
+    r = client.get("/articles/3")
+    assert r.status_code == 200
+    body = r.json()
+    assert body["article"] == "3"
+    assert body["parts"][0]["ref"] == "Статья 3, части 1-2"
+    assert body["parts"][0]["score"] is None
+
+
+def test_article_not_found(client):
+    """Несуществующая статья -> 404."""
+    app.state.store = ArticleStore(count=len(HITS))
+    assert client.get("/articles/999").status_code == 404
+
+
+@pytest.mark.parametrize("number", ["abc", "3.", "67.12", "1234", "-1"])
+def test_article_bad_number(client, number):
+    """Строка, не похожая на номер статьи -> 422."""
+    app.state.store = ArticleStore(count=len(HITS))
+    assert client.get(f"/articles/{number}").status_code == 422

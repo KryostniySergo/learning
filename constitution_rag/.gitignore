@@ -4,3 +4,15 @@
 __pychache__/
 __pycache__
 constitution.txt
+
+.venv/
+__pycache__/
+*.pyc
+.env
+.pytest_cache/
+
+# данные: исходник и индекс в git не кладём
+data/raw/*
+data/chroma/*
+!data/raw/.gitkeep
+!data/chroma/.gitkeep

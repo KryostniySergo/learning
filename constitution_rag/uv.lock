@@ -441,7 +441,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "chromadb", specifier = ">=0.5" },
+    { name = "chromadb", specifier = ">=1.0" },
     { name = "fastapi", specifier = ">=0.110" },
     { name = "httpx", specifier = ">=0.28.1" },
     { name = "openai", specifier = ">=1.30" },

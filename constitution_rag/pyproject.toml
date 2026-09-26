@@ -6,7 +6,7 @@ readme = "README.md"
 authors = [{ name = "KryostniySergo", email = "calve45@mail.ru" }]
 requires-python = ">=3.13"
 dependencies = [
-    "chromadb>=0.5",
+    "chromadb>=1.0",
     "fastapi>=0.110",
     "httpx>=0.28.1",
     "openai>=1.30",

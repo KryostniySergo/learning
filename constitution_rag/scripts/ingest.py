@@ -18,7 +18,7 @@ def run(store: ChromaStore, embedder: Embedder, recreate: bool = False) -> None:
     started = time.perf_counter()
 
     units = parse(load_text(settings.source_path))
-    chunks = build_chunks(units, settings.min_chunk_chars, settings.max_chunk_chars)
+    chunks = build_chunks(units, settings.min_chunk_chars, settings.max_chunk_chars, with_header=settings.chunk_header)
     ids = [c.id for c in chunks]
     if len(ids) != len(set(ids)):
         dupes = sorted({i for i in ids if ids.count(i) > 1})
@@ -55,7 +55,7 @@ def main() -> None:
     args = ap.parse_args()
 
     store = ChromaStore(settings.chroma_path, settings.collection_name)
-    embedder = Embedder(settings.embedding_model, settings.embedding_device)
+    embedder = Embedder.from_settings(settings)
     run(store, embedder, recreate=args.recreate)
 
 

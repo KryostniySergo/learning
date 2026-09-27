@@ -20,6 +20,7 @@ class Embedder:
         device: str = "cpu",
         cache_size: int = 1024,
         model: Any | None = None,
+        use_prefixes: bool = True,
     ) -> None:
         """Загружает модель.
 
@@ -29,6 +30,8 @@ class Embedder:
             cache_size: сколько последних запросов держать в кеше.
             model: готовый объект модели вместо загрузки по имени. Нужен для тестов:
                 туда можно передать фейк с методом encode и не качать настоящую модель.
+            use_prefixes: добавлять ли "query: "/"passage: " для e5 (выключается
+                только ради эксперимента на этапе 10).
         """
         if model is None:
             # импорт внутри: библиотека тянет torch и грузится несколько секунд,
@@ -38,10 +41,15 @@ class Embedder:
             model = SentenceTransformer(model_name, device=device)
         self.model_name = model_name
         self._model = model
-        self._is_e5 = "e5" in model_name.lower()
+        self._is_e5 = use_prefixes and "e5" in model_name.lower()
         self._cache: OrderedDict[str, tuple[float, ...]] = OrderedDict()
         self._cache_size = cache_size
         self._lock = threading.Lock()  # кеш трогают из нескольких потоков (run_in_threadpool)
+
+    @classmethod
+    def from_settings(cls, settings) -> "Embedder":
+        """Эмбеддер с моделью, устройством и режимом префиксов из настроек."""
+        return cls(settings.embedding_model, settings.embedding_device, use_prefixes=settings.e5_prefixes)
 
     @property
     def dim(self) -> int:

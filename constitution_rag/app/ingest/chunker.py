@@ -119,7 +119,16 @@ def _group(units: list[Unit], min_chars: int) -> list[_Group]:
     return groups
 
 
-def build_chunks(units: list[Unit], min_chars: int, max_chars: int) -> list[Chunk]:
+def build_chunks(units: list[Unit], min_chars: int, max_chars: int, with_header: bool = True) -> list[Chunk]:
+    """Превращает единицы парсера в чанки для индекса.
+
+    Args:
+        units: результат parse().
+        min_chars: короче — сливаем со следующей частью той же статьи.
+        max_chars: длиннее — режем по предложениям.
+        with_header: добавлять ли в embed_text заголовок "Глава N. ... Статья M, часть K."
+            (выключается только ради эксперимента на этапе 10).
+    """
     chunks: list[Chunk] = []
     for g in _group(units, min_chars):
         u = g.first
@@ -132,7 +141,7 @@ def build_chunks(units: list[Unit], min_chars: int, max_chars: int) -> list[Chun
             chunks.append(
                 Chunk(
                     id=base if len(pieces) == 1 else f"{base}-c{idx}",
-                    embed_text=f"{head}{ref}. {piece}",
+                    embed_text=f"{head}{ref}. {piece}" if with_header else piece,
                     quote=piece,
                     ref=ref,
                     chapter=u.chapter,

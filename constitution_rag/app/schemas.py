@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from app.search.store import Hit
 
@@ -13,21 +13,21 @@ class Citation(BaseModel):
     part: str | None = None
     quote: str
     score: float | None = None  # None, если фрагмент выбран точно, а не поиском
+    match: str  # как найден: vector | lexical | both | exact
 
     @classmethod
-    def from_hit(cls, hit: Hit, with_score: bool = True) -> "Citation":
+    def from_hit(cls, hit: Hit) -> "Citation":
         """Переводит внутренний Hit хранилища во внешний формат API.
 
-        Args:
-            hit: фрагмент из хранилища.
-            with_score: False для точной выборки по номеру — там скор не имеет смысла.
+        У точной выборки (match="exact") скора нет: смысл там не сравнивался.
         """
         return cls(
             ref=hit.ref,
             article=hit.article,
             part=hit.part,
             quote=hit.quote,
-            score=round(hit.score, 4) if with_score else None,
+            score=None if hit.source == "exact" else round(hit.score, 4),
+            match=hit.source,
         )
 
 
@@ -46,4 +46,29 @@ class ArticleResponse(BaseModel):
 
     article: str
     parts: list[Citation]
+    disclaimer: str = DISCLAIMER
+
+
+class AskRequest(BaseModel):
+    """Тело POST /ask."""
+
+    question: str = Field(min_length=3, max_length=500, description="Вопрос на естественном языке")
+    k: int = Field(default=5, ge=1, le=10, description="Сколько фрагментов дать модели")
+
+
+class AskResponse(BaseModel):
+    """Ответ /ask.
+
+    found     — нашлись ли в Конституции фрагменты по вопросу;
+    answer    — связный ответ модели или null (LLM выключена, упала, не нашла ответа);
+    message   — пояснение для человека, почему ответа нет;
+    citations — фрагменты из БД; их текст всегда совпадает с хранилищем, модель его не меняет.
+    """
+
+    found: bool
+    answer: str | None = None
+    message: str | None = None
+    citations: list[Citation]
+    llm_used: bool
+    took_ms: int
     disclaimer: str = DISCLAIMER

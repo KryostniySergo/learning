@@ -5,7 +5,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(env_file=".env.example", env_prefix="APP_", extra="ignore")
+    model_config = SettingsConfigDict(env_file=".env", env_prefix="APP_", extra="ignore")
 
     # данные
     source_path: Path = Path("data/raw/constitution.txt")
@@ -36,6 +36,12 @@ class Settings(BaseSettings):
     llm_model: str = "qwen2.5:7b-instruct"
     llm_timeout: float = 30.0
     llm_max_tokens: int = 500
+
+    bm25_stemming: bool = True  # стемминг токенов для BM25 (эксперимент для этапа 10)
+    rrf_k: int = 60  # сглаживающая константа RRF
+
+    chunk_header: bool = True  # заголовок "Глава N. ... Статья M." в embed_text
+    e5_prefixes: bool = True  # префиксы "query: "/"passage: " для моделей e5
 
 
 settings = Settings()

@@ -19,6 +19,7 @@ class Hit:
     article: str | None
     part: str | None
     score: float  # косинусная близость: 1.0 — совпадение, чем больше, тем релевантнее
+    source: str = "vector"  # как найден: vector | lexical | both | exact
 
 
 def _clean_metadata(meta: dict[str, Any]) -> dict[str, Any]:
@@ -26,7 +27,7 @@ def _clean_metadata(meta: dict[str, Any]) -> dict[str, Any]:
     return {k: v for k, v in meta.items() if v is not None}
 
 
-def _to_hit(cid: str, doc: str, meta: dict[str, Any], score: float) -> Hit:
+def _to_hit(cid: str, doc: str, meta: dict[str, Any], score: float, source: str) -> Hit:
     """Собирает Hit из одной записи Chroma."""
     return Hit(
         id=cid,
@@ -35,6 +36,7 @@ def _to_hit(cid: str, doc: str, meta: dict[str, Any], score: float) -> Hit:
         article=meta.get("article"),
         part=meta.get("part"),
         score=score,
+        source=source,
     )
 
 
@@ -137,25 +139,37 @@ class ChromaStore:
             include=["documents", "metadatas", "distances"],
         )
         return [
-            _to_hit(cid, doc, meta, score=1.0 - float(dist))
+            _to_hit(cid, doc, meta, score=1.0 - float(dist), source="vector")
             for cid, doc, meta, dist in zip(
                 res["ids"][0], res["documents"][0], res["metadatas"][0], res["distances"][0], strict=False
             )
         ]
 
     def _get(self, **kwargs) -> list[tuple[int, Hit]]:
-        """Точная выборка без вектора. Возвращает пары (seq, Hit) со скором 0."""
+        """Точная выборка без вектора. Возвращает пары (seq, Hit) со скором 0 и source="exact"."""
         res = self._collection.get(include=["documents", "metadatas"], **kwargs)
         return [
-            (meta.get("seq", 0), _to_hit(cid, doc, meta, score=0.0))
+            (meta.get("seq", 0), _to_hit(cid, doc, meta, score=0.0, source="exact"))
             for cid, doc, meta in zip(res["ids"], res["documents"], res["metadatas"], strict=False)
         ]
 
-    def get_by_ids(self, ids: list[str]) -> dict[str, Hit]:
-        """Чанки по списку id (порядок не гарантирован, поэтому словарь)."""
+    def get_by_ids(self, ids: list[str], vector: list[float] | None = None) -> dict[str, Hit]:
+        """Чанки по списку id (порядок не гарантирован, поэтому словарь).
+
+        Если передан вектор запроса, у каждого чанка считается честная косинусная
+        близость к нему (векторы нормализованы, поэтому это скалярное произведение).
+        Так у фрагментов, найденных только BM25, тоже будет настоящий score.
+        """
         if not ids:
             return {}
-        return {hit.id: hit for _, hit in self._get(ids=ids)}
+        if vector is None:
+            return {hit.id: hit for _, hit in self._get(ids=ids)}
+        res = self._collection.get(ids=ids, include=["documents", "metadatas", "embeddings"])
+        hits = {}
+        for cid, doc, meta, emb in zip(res["ids"], res["documents"], res["metadatas"], res["embeddings"], strict=False):
+            score = float(sum(a * b for a, b in zip(vector, emb, strict=False)))
+            hits[cid] = _to_hit(cid, doc, meta, score=score, source="vector")
+        return hits
 
     def get_by_article(self, article: str) -> list[Hit]:
         """Все чанки статьи в порядке следования в тексте. Пустой список, если статьи нет."""

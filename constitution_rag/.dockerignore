@@ -1,0 +1,12 @@
+.venv
+.git
+.vscode
+.env
+.env.*
+!.env.example
+data
+service.log
+__pycache__
+*.pyc
+.pytest_cache
+tests

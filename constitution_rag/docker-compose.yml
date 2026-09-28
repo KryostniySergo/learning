@@ -1,0 +1,17 @@
+services:
+  api:
+    build: .
+    image: constitution-rag:latest
+    ports:
+      - "8000:8000"
+    env_file: .env
+    environment:
+      APP_CHROMA_PATH: /app/data/chroma
+      APP_SOURCE_PATH: /app/data/raw/constitution.txt
+    volumes:
+      - chroma:/app/data/chroma
+      - ./data/raw:/app/data/raw:ro
+    restart: unless-stopped
+
+volumes:
+  chroma:

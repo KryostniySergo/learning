@@ -5,6 +5,7 @@ import logging
 import threading
 from dataclasses import replace
 
+from app.observability import Stopwatch
 from app.search.article_ref import extract_article_numbers
 from app.search.embedder import Embedder
 from app.search.lexical import BM25Index
@@ -65,32 +66,57 @@ class Retriever:
             self._bm25 = index
         logger.info("bm25 index: %d chunks", len(chunks))
 
-    def retrieve(self, query: str, k: int) -> list[Hit]:
+    def retrieve(self, query: str, k: int, trace: dict | None = None) -> list[Hit]:
         """До k фрагментов по вопросу, лучшие первыми. Пустой список означает "не найдено".
 
         Порядок работы:
         1. Если в вопросе прямо названа статья — точная выборка её частей, без вектора.
         2. Векторный поиск candidate_k кандидатов.
         3. Порог: если даже лучший кандидат ниже min_score — ответа нет.
-        4. Гибрид: BM25 по тому же вопросу и слияние двух списков через RRF.
+        4. Гибрид (если включён): BM25 и слияние двух списков через RRF.
+
+        Args:
+            trace: необязательный словарь, куда записываются подробности для логов:
+                route (exact | empty | refused | vector | hybrid), best_score,
+                embed_ms, search_ms, bm25_ms.
         """
-        exact = self._exact(query, k)
+        trace = {} if trace is None else trace
+
+        with Stopwatch() as sw:
+            exact = self._exact(query, k)
         if exact:
+            trace.update(route="exact", search_ms=sw.ms)
             return exact
 
-        vector = self._embedder.embed_query(query)
-        candidates = self._store.search(vector, self._settings.candidate_k)
+        with Stopwatch() as sw:
+            vector = self._embedder.embed_query(query)
+        trace["embed_ms"] = sw.ms
+
+        with Stopwatch() as sw:
+            candidates = self._store.search(vector, self._settings.candidate_k)
+        trace["search_ms"] = sw.ms
         if not candidates:
+            trace["route"] = "empty"
             return []
 
         best = max(h.score for h in candidates)
+        trace["best_score"] = round(best, 4)
         if best < self._settings.min_score:
+            trace["route"] = "refused"
             return []
 
         bm25 = self._get_bm25()
         if bm25 is None:
+            trace["route"] = "vector"
             return candidates[:k]
 
+        with Stopwatch() as sw:
+            result = self._fuse(query, vector, candidates, bm25, k)
+        trace.update(route="hybrid", bm25_ms=sw.ms)
+        return result
+
+    def _fuse(self, query: str, vector: list[float], candidates: list[Hit], bm25: BM25Index, k: int) -> list[Hit]:
+        """BM25 по вопросу + слияние с векторными кандидатами через RRF."""
         lexical_ids = bm25.search(query, self._settings.candidate_k)
         vector_ids = [h.id for h in candidates]
 

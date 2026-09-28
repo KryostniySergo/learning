@@ -1,5 +1,7 @@
+# app/main.py
+"""FastAPI-приложение: жизненный цикл, middleware и эндпоинты."""
+
 import logging
-import time
 from contextlib import asynccontextmanager
 from typing import Annotated
 
@@ -9,41 +11,75 @@ from fastapi.concurrency import run_in_threadpool
 from app.config import settings
 from app.deps import get_llm, get_retriever, get_store
 from app.llm.client import LLMClient, OpenAICompatibleClient
-from app.llm.rag import generate_answer
+from app.llm.rag import PROMPT_VERSION, generate_answer
+from app.middleware import RateLimiter, rate_limit_middleware, request_context_middleware
+from app.observability import Stopwatch, log_event, setup_logging
 from app.schemas import ArticleResponse, AskRequest, AskResponse, Citation, SearchResponse
 from app.search.embedder import Embedder
 from app.search.retriever import Retriever
-from app.search.store import ChromaStore
+from app.search.store import ChromaStore, Hit
+from app.security import looks_like_injection, sanitize_question
 
-logger = logging.getLogger(__name__)
+setup_logging(settings.log_level)
+logger = logging.getLogger("app")
+
+NOT_FOUND_MESSAGE = "В тексте Конституции РФ прямого ответа на этот вопрос не нашлось."
+LLM_DISABLED_MESSAGE = "Генерация ответов выключена — ниже найденные фрагменты текста."
+LLM_FAILED_MESSAGE = "Не удалось получить связный ответ — ниже найденные фрагменты текста."
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Загружает тяжёлые объекты один раз при старте и освобождает при остановке.
-
-    Всё до yield выполняется до приёма первого запроса, всё после — при выключении.
-    """
-    started = time.perf_counter()
-    embedder = Embedder.from_settings(settings)
-    store = ChromaStore(settings.chroma_path, settings.collection_name)
-    app.state.embedder = embedder
-    app.state.store = store
-    app.state.retriever = Retriever(embedder, store, settings)
-    app.state.llm = (
-        OpenAICompatibleClient(settings.llm_model, settings.llm_api_key, settings.llm_base_url, settings.llm_timeout)
-        if settings.llm_enabled
-        else None
+    """Загружает тяжёлые объекты один раз при старте и освобождает при остановке."""
+    with Stopwatch() as sw:
+        embedder = Embedder.from_settings(settings)
+        store = ChromaStore(settings.chroma_path, settings.collection_name)
+        app.state.embedder = embedder
+        app.state.store = store
+        app.state.retriever = Retriever(embedder, store, settings)
+        app.state.llm = (
+            OpenAICompatibleClient(
+                settings.llm_model, settings.llm_api_key, settings.llm_base_url, settings.llm_timeout
+            )
+            if settings.llm_enabled
+            else None
+        )
+    log_event(
+        logger,
+        "startup",
+        took_ms=sw.ms,
+        documents=store.count(),
+        collection=settings.collection_name,
+        model=settings.embedding_model,
+        hybrid=settings.use_hybrid,
+        min_score=settings.min_score,
+        llm=f"{settings.llm_model} @ {settings.llm_base_url}" if settings.llm_enabled else "disabled",
+        rate_limit_per_minute=settings.rate_limit_per_minute,
     )
-    logger.info("startup done in %.1f s, documents=%d", time.perf_counter() - started, store.count())
     yield
     app.state.llm = app.state.retriever = app.state.store = app.state.embedder = None
 
 
-app = FastAPI(title="Constitution RAG", version="0.3.0", lifespan=lifespan)
+app = FastAPI(title="Constitution RAG", version="0.4.0", lifespan=lifespan)
+app.state.rate_limiter = RateLimiter(settings.rate_limit_per_minute)
 
-NOT_FOUND_MESSAGE = "В тексте Конституции РФ прямого ответа на этот вопрос не нашлось."
-NO_LLM_MESSAGE = "Связный ответ сейчас недоступен — ниже найденные фрагменты текста."
+# Порядок важен: middleware, добавленный ПОЗЖЕ, оборачивает более ранние и выполняется ПЕРВЫМ.
+# Так request_id назначается раньше всего, и даже ответ 429 получает id и строку в логе.
+app.middleware("http")(rate_limit_middleware)
+app.middleware("http")(request_context_middleware)
+
+
+def _clean_question(text: str) -> str:
+    """Санитизация вопроса; если после неё почти ничего не осталось — 422."""
+    cleaned = sanitize_question(text)
+    if len(cleaned) < 3:
+        raise HTTPException(status_code=422, detail="Вопрос пуст после очистки служебной разметки")
+    return cleaned
+
+
+def _hits_for_log(hits: list[Hit]) -> list[dict]:
+    """Краткое описание найденных фрагментов для лога: id и скор, без текста."""
+    return [{"id": h.id, "score": round(h.score, 4), "match": h.source} for h in hits]
 
 
 @app.get("/healthz")
@@ -53,12 +89,20 @@ def healthz() -> dict[str, str]:
 
 
 @app.get("/readyz")
-def readyz(store: Annotated[ChromaStore, Depends(get_store)]) -> dict[str, object]:
-    """Readiness: сервис готов отвечать, то есть индекс построен и не пуст."""
+def readyz(
+    store: Annotated[ChromaStore, Depends(get_store)],
+    llm: Annotated[LLMClient | None, Depends(get_llm)],
+) -> dict[str, object]:
+    """Readiness: индекс построен и не пуст. Заодно показывает, включена ли генерация."""
     count = store.count()
     if count == 0:
         raise HTTPException(status_code=503, detail="Индекс пуст: запусти python -m scripts.ingest")
-    return {"status": "ready", "documents": count, "collection": settings.collection_name}
+    return {
+        "status": "ready",
+        "documents": count,
+        "collection": settings.collection_name,
+        "llm": f"{settings.llm_model} @ {settings.llm_base_url}" if llm else "disabled",
+    }
 
 
 @app.get("/search", response_model=SearchResponse)
@@ -68,11 +112,14 @@ async def search(
     k: Annotated[int, Query(ge=1, le=20, description="Сколько цитат вернуть")] = settings.default_k,
 ) -> SearchResponse:
     """Чистый поиск цитат без LLM: вопрос -> фрагменты Конституции со ссылками и скорами."""
-    started = time.perf_counter()
-    hits = await run_in_threadpool(retriever.retrieve, q, k)  # модель на CPU — не в event loop
+    query = _clean_question(q)
+    trace: dict = {}
+    with Stopwatch() as total:
+        hits = await run_in_threadpool(retriever.retrieve, query, k, trace)
+    log_event(logger, "search", query=query, k=k, hits=_hits_for_log(hits), total_ms=total.ms, **trace)
     return SearchResponse(
-        query=q,
-        took_ms=int((time.perf_counter() - started) * 1000),
+        query=query,
+        took_ms=total.ms,
         collection=settings.collection_name,
         results=[Citation.from_hit(h) for h in hits],
     )
@@ -87,10 +134,7 @@ def get_article(
     hits = store.get_by_article(number)
     if not hits:
         raise HTTPException(status_code=404, detail=f"Статья {number} не найдена")
-    return ArticleResponse(
-        article=number,
-        parts=[Citation.from_hit(h) for h in hits],
-    )
+    return ArticleResponse(article=number, parts=[Citation.from_hit(h) for h in hits])
 
 
 @app.post("/ask", response_model=AskResponse)
@@ -102,27 +146,50 @@ async def ask(
     """Ответ на вопрос: цитаты из Конституции и (если доступна LLM) связный пересказ.
 
     Сервис не падает из-за LLM: если она выключена или недоступна, возвращаются цитаты.
+    Каждый запрос пишет в лог событие "ask", по которому видно, что именно увидела модель.
     """
-    started = time.perf_counter()
+    question = _clean_question(payload.question)
+    trace: dict = {}
+    event: dict = {
+        "question": question,
+        "k": payload.k,
+        "suspicious": looks_like_injection(question),
+        "prompt_version": PROMPT_VERSION,
+    }
 
-    def elapsed() -> int:
-        """Миллисекунды с начала обработки запроса."""
-        return int((time.perf_counter() - started) * 1000)
+    with Stopwatch() as total:
+        hits = await run_in_threadpool(retriever.retrieve, question, payload.k, trace)
+        event["hits"] = _hits_for_log(hits)
 
-    hits = await run_in_threadpool(retriever.retrieve, payload.question, payload.k)
-    if not hits:  # порог сработал — LLM не вызываем вообще
-        return AskResponse(found=False, message=NOT_FOUND_MESSAGE, citations=[], llm_used=False, took_ms=elapsed())
+        if not hits:  # порог сработал — LLM не вызываем вообще
+            event["llm_status"] = "skipped"
+            response = AskResponse(found=False, message=NOT_FOUND_MESSAGE, citations=[], llm_used=False, took_ms=0)
+        elif llm is None:
+            event["llm_status"] = "disabled"
+            response = AskResponse(
+                found=True,
+                message=LLM_DISABLED_MESSAGE,
+                citations=[Citation.from_hit(h) for h in hits],
+                llm_used=False,
+                took_ms=0,
+            )
+        else:
+            with Stopwatch() as llm_sw:
+                result = await run_in_threadpool(generate_answer, question, hits, llm, settings.llm_max_tokens)
+            event.update(llm_status=result.status, llm_ms=llm_sw.ms, answer=result.text)
+            response = _ask_response(result.status, result.text, hits)
 
-    citations = [Citation.from_hit(h) for h in hits]  # ЦИТАТЫ ВСЕГДА ИЗ БД
-    if llm is None:
-        return AskResponse(found=True, message=NO_LLM_MESSAGE, citations=citations, llm_used=False, took_ms=elapsed())
+    response.took_ms = total.ms
+    log_event(logger, "ask", found=response.found, total_ms=total.ms, **trace, **event)
+    return response
 
-    result = await run_in_threadpool(generate_answer, payload.question, hits, llm, settings.llm_max_tokens)
-    if result.status == "ok":
-        return AskResponse(found=True, answer=result.text, citations=citations, llm_used=True, took_ms=elapsed())
-    if result.status == "not_found":
-        return AskResponse(
-            found=False, message=NOT_FOUND_MESSAGE, citations=citations, llm_used=True, took_ms=elapsed()
-        )
+
+def _ask_response(status: str, text: str | None, hits: list[Hit]) -> AskResponse:
+    """Собирает ответ /ask по статусу генерации. Цитаты всегда берутся из БД."""
+    citations = [Citation.from_hit(h) for h in hits]
+    if status == "ok":
+        return AskResponse(found=True, answer=text, citations=citations, llm_used=True, took_ms=0)
+    if status == "not_found":
+        return AskResponse(found=False, message=NOT_FOUND_MESSAGE, citations=citations, llm_used=True, took_ms=0)
     # error / bad_citations: ответа модели нет или ему нельзя доверять — отдаём только цитаты
-    return AskResponse(found=True, message=NO_LLM_MESSAGE, citations=citations, llm_used=False, took_ms=elapsed())
+    return AskResponse(found=True, message=LLM_FAILED_MESSAGE, citations=citations, llm_used=False, took_ms=0)

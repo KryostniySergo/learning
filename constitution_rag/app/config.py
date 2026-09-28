@@ -43,5 +43,8 @@ class Settings(BaseSettings):
     chunk_header: bool = True  # заголовок "Глава N. ... Статья M." в embed_text
     e5_prefixes: bool = True  # префиксы "query: "/"passage: " для моделей e5
 
+    rate_limit_per_minute: int = 30  # 0 — ограничение выключено
+    log_level: str = "INFO"
+
 
 settings = Settings()

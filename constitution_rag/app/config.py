@@ -26,8 +26,8 @@ class Settings(BaseSettings):
     # поиск
     default_k: int = 5
     candidate_k: int = 30  # сколько достаём до реранкинга/фьюжена
-    min_score: float = 0.80  # порог отсечения, подбирается по eval!
-    use_hybrid: bool = True
+    min_score: float = 0.829  # подобран по eval: середина зазора между позитивными и негативными
+    use_hybrid: bool = False  # по eval BM25 не помогает на этом корпусе, см. README
 
     # LLM (опционально)
     llm_enabled: bool = False

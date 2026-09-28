@@ -184,12 +184,13 @@ def main() -> None:
         f"false refusal={m.false_refusal:.0%}, recall@5={m.recall[5]:.1%}"
     )
 
-    print("\nгде ожидаемой статьи нет в top-5 (без порога):")
-    misses = [o for o in outcomes if not o.case.is_negative and o.rank() is None]
-    for o in misses:
+    print("\nгде ожидаемая статья не на первом месте (без порога):")
+    weak = [o for o in outcomes if not o.case.is_negative and o.rank() != 1]
+    for o in sorted(weak, key=lambda o: o.rank() or 99):
         got = ", ".join(a or "—" for a in o.articles[:3])
-        print(f"  {o.case.question}  ждали {'|'.join(sorted(o.case.expected))}, получили {got}")
-    if not misses:
+        place = f"место {o.rank()}" if o.rank() else "нет в top-5"
+        print(f"  [{place}] {o.case.question}  ждали {'|'.join(sorted(o.case.expected))}, получили {got}")
+    if not weak:
         print("  нет")
 
     print("\nнегативные вопросы, отсортированы по опасности (лучший скор сверху):")
@@ -197,11 +198,13 @@ def main() -> None:
         print(f"  {o.best_score:.3f}  {o.case.question}")
 
     if args.tag:
-        m = compute(outcomes, settings.min_score)
+        m0 = compute(outcomes, 0.0)  # ранжирование без порога
+        mt = compute(outcomes, thr)  # отказы при собственном подобранном пороге
+        margin = min(pos_scores) - max(neg_scores) if pos_scores and neg_scores else float("nan")
         print("\nстрока для README:")
         print(
-            f"| {args.tag} | {m.recall[1]:.1%} | {m.recall[3]:.1%} | {m.recall[5]:.1%} | "
-            f"{m.mrr:.3f} | {m.refusal_acc:.0%} | {m.false_refusal:.0%} |"
+            f"| {args.tag} | {m0.recall[1]:.1%} | {m0.recall[3]:.1%} | {m0.recall[5]:.1%} | "
+            f"{m0.mrr:.3f} | {margin:+.3f} | {thr} | {mt.refusal_acc:.0%} | {mt.false_refusal:.0%} |"
         )
 
 
